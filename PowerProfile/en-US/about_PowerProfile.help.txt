@@ -1,0 +1,241 @@
+TOPIC
+    about_PowerProfile
+
+SHORT DESCRIPTION
+    A modern and cross-platform PowerShell profile, based on directories instead of pure files.
+
+LONG DESCRIPTION
+    PowerProfile uses a directory structure for user profiles instead of single script files. It extends the native
+    capabilities of PowerShell to also support profiles for individual terminal applications.
+
+EXAMPLES
+    Installation can be done from the PowerShell Gallery as followed:
+
+        PS C:\> Install-Module PowerProfile,PowerProfile.Commands -Scope CurrentUser
+
+    Note that you should install both packages. Some interactive commands are outsourced into a dedicated module to avoid they
+    are constantly loaded in every PS session for no particular reason.
+
+    Now, manually import the module once to trigger the automatic setup procedure:
+
+        PS C:\> Import-Module PowerProfile
+
+    This runs a precondition check and performs the required setup steps before loading the module. Essentially, the
+    `profile.ps1` file in `$PROFILE.CurrentUserAllHosts` is generated to enable automatic load for new PowerShell sessions.
+    Don't worry: Existing files will always be backed up as `.bak` files. Should you ever want to remove PowerProfile, the
+    `Uninstall-PowerProfile` command has you covered.
+
+    Differences on macOS and Linux
+    ------------------------------
+
+    Please note that the PowerProfile module must be installed in user scope and can not be used in global machine scope.
+    On Windows machines, user modules are automatically installed to the `$HOME\Documents\PowerShell` folder which in turn
+    also hosts PowerShell profile files.
+
+    On macOS or Linux machines, the configuration/profile files are separated from local user installed modules. This is
+    great in general and something we miss A LOT on Windows (see environment varibale `$env:IsProfileRedirected` mentioned below).
+
+    As PowerProfile is an in-place upgrade of the native PowerShell profile capabilities, you will need to manually copy
+    the module from `~/.local/share/powershell/Modules/PowerProfile` to `~/.config/powershell/Modules/PowerProfile`.
+    The initial setup on macOS and Linux is slightly different as the designated module path is not part of
+    `$env:PSModulePath` (yet):
+
+        PS ~> Import-Module ~/.config/powershell/Modules/PowerProfile
+
+    That is, until you let PowerProfile take over, of course :-)
+
+    About the PowerProfile runtime environment
+    ------------------------------------------
+
+    Enhancing the runtime environment is what PowerProfile does out of the box for you, no need to keep an eye on anything
+    like this anymore. It transparently fixes PATH issues when PowerShell is used as login shell on Unix systems and has
+    built-in support for the famous package manager Homebrew on macOS and Linux.
+
+    These are environment variables specifically curated by PowerProfile for you:
+
+        - `$env:IsElevated`                 (Set when `pwsh` was started with administrative/root privileges.)
+        - `$env:IsProfileRedirected`        (Set when the user profile is stored outside of the regular folder.
+                                              Currently, this is set when folder redirection is enabled for OneDrive on
+                                              Windows. PowerProfile provides a proxy `Install-Module` command that will make
+                                              use of this information to avoid OneDrive sync issues by keeping the PowerShell profile
+                                              as little as possible.)
+        - `$env:SHLVL`                      (Unix shell levels are respected correctly to handle sub-shells appropriately. The built-in
+                                              prompt uses this information to indicate the number of current parent shells.
+                                              This functionality is also extended to Windows systems.)
+        - `$env:PSLVL`                      (Similar to `$env:SHLVL` but only counts the parent PowerShell sessions. PowerProfile uses
+                                              this information internally to skip certain parts of the profile that shall only be at the
+                                              beginning of the first PowerShell session.)
+        - `$env:TERM_PROGRAM`               (Set if the variable was not set by the terminal application)
+        - `$env:PSHOST_PROGRAM`             (Reformated `$PROFILE.CurrentUserCurrentHost` that PowerProfile uses internally to represent the
+                                              current PowerShell host application.)
+        - `$env:LC_TERMINAL`                (`$env:TERM_PROGRAM` but in human readable format. Generated if not set by the terminal application.
+                                              The PowerProfile profile directory is derived from this.)
+        - `$env:LC_PSHOST`                  (Same as `$env:LC_TERMINAL` but for the PowerShell host application.)
+        - `$env:COMPUTERNAME`               (Generated from `$env:HOSTNAME` on Unix to support with platform compatibility)
+        - `$env:HOSTNAME`                   (Generated from `$env:COMPUTERNAME` on Windows to support with platform compatibility)
+        - `$env:PROCESSOR_ARCHITECTURE`     (Generated on Unix to support with platform compatibility. PowerProfile conditional directories are
+                                              derived from this.)
+        - `$env:XDG_*`                      (Provides paths based on the XDG Base Directory Specification. PowerProfile respects these when
+                                              storing local state information.)
+
+    Also, these few PowerShell global variables can be very handy to use:
+
+        - `$IsCommand`              (Set when `pwsh` was started with `-Command` parameter.)
+        - `$IsLogin`                (Set when `pwsh` was started as login shell using the `-l` parameter.)
+        - `$IsNoExit`               (Set when `pwsh` was started with `-NoExit` parameter.)
+        - `$IsNonInteractive`       (Set when `pwsh` was started with `-NonInteractive` parameter or by running a PS1 script
+                                      that does not use the file extension `.ps1` but a shebang like `#!/usr/bin/env pwsh` instead.)
+        - `$PROFILEHOME`            (A shortcut to navigate to the PowerShell user profile directory, similar to `$PROFILE`.)
+
+    Obviously PowerProfile uses these variables internally to control what parts of the user profile shall be loaded in which situations.
+    You can observe the variables in your current session like this:
+
+        PS C:\> Get-Variable | Where-Object -Property ModuleName -match '^PowerProfile' | Select-Object Name,ModuleName
+
+    How to begin using PowerProfile?
+    ================================
+
+    Okay... your brandnew PowerShell profile is entirely empty, so what do you do now?
+
+    To create initial directories for you to put your startup script(s), let the `New-PowerProfile` command create the structure
+    for your current machine, including the terminal application you are currently using:
+
+        PS C:\> New-PowerProfile
+            Creating profile directories in: $HOME\Documents\PowerShell
+
+            🗂  Profile
+            🗂  Profile_powershell
+            🗂  Profile_windowsterminal
+
+    Here you can see that `Profile` and `Profile_powershell` were created as the equivalents to `$PROFILE.CurrentUserAllHosts`
+    and `$PROFILE.AllUsersAllHosts`. Assuming we were running the new Windows Terminal, a third type of profile is generated that
+    only loads when using Windows Terminal. The same applies when using iTerm2 or Apple Terminal on macOS.
+    You can run the command as often as you like in every other terminal application you are using, even your IDE like for example
+    Visual Studio Code. It would create yet another folder `Profile_vscode` that is only worked on in VSCode development sessions.
+
+    The real power in PowerProfile comes into play when you start using two things:
+
+    1. Conditional sub-directories
+    ------------------------------
+
+    Repeat the `New-PowerProfile` command but with parameters this time:
+
+        PS C:\> New-PowerProfile -AllConditionalDirectories
+            Creating profile directories in: $HOME\Documents\PowerShell
+
+            🗂  Profile
+            ├──🏢 _Arch_AMD64
+            ├──💻 _Machine_DESKTOP-XYZ
+            ├──💾 _Platform_Windows
+            │   └──🏢 _Arch_AMD64
+            └──🐚 _PSEdition_Core
+                ├──🏢 _Arch_AMD64
+                └──💻 _Machine_DESKTOP-XYZ
+
+            🗂  Profile_powershell
+            ├──🏢 _Arch_AMD64
+            ├──💻 _Machine_DESKTOP-XYZ
+            ├──💾 _Platform_Windows
+            │   └──🏢 _Arch_AMD64
+            └──🐚 _PSEdition_Core
+                ├──🏢 _Arch_AMD64
+                └──💻 _Machine_DESKTOP-XYZ
+
+            🗂  Profile_iterm2
+            ├──🏢 _Arch_AMD64
+            ├──💻 _Machine_DESKTOP-XYZ
+            ├──💾 _Platform_Windows
+            │   └──🏢 _Arch_AMD64
+            └──🐚 _PSEdition_Core
+                ├──🏢 _Arch_AMD64
+                └──💻 _Machine_DESKTOP-XYZ
+
+    These are additional profile directories that are processed only based on conditions of your current machine. You can clearly identify
+    them by the `_` prefix.
+    Now with OneDrive installed and files on-demand enabled, your PowerShell profile on Windows is actually roaming to other PCs or also
+    Macs and Linux machines. This allows you to use one single PS profile on all your devices. At the same time, you can be very selective
+    what parts of your profile shall be loaded.
+    Using a directory structure instead of a single profile file with complex nested if-elseif-then statements is a huge benefit in terms
+    of transparency, portability, and maintainability.
+    If you are done filling up the profiles directories with content, you may use the `Optimize-PowerProfile` command to cleanup and directories
+    that are not in use and therefore empty. Think of it as the natural opponent to the `New-PowerProfile` command.
+
+    How does PowerProfile handle profile directories internally?
+    ------------------------------------------------------------
+
+    At load time, all profile directories that match to your current system environment are "merged" into a single, virtual directory with a
+    fixed order preference. That means that all files from any of these directories come together and eventually can be handled as if they were
+    in a single directory. This is called "layering".
+    Files using the same name are replaced be a different variant that may exist later in the order. This happens before any code is read
+    from files so it really is a very individual profile being generated, tailored for every machine and each terminal application.
+
+    Indeed, PowerProfile on the fly generates up to three dynamic PowerShell modules. We can actually see this from the list of loaded
+    modules, indicated by the prefix `PowerProfile-Dyn`:
+
+            PS C:\> Get-Module PowerProfile* | Select-Object -Property Name
+
+            Name
+            ----
+            PowerProfile
+            PowerProfile-Dyn.Functions
+            PowerProfile-Dyn.Scripts
+            PowerProfile-Dyn.Scripts.PowerShell
+            PowerProfile-Dyn.Scripts.WindowsTerminal
+            PowerProfile.Core
+            PowerProfile.Core.Load
+
+    As you can see from the output, there are three dynamic script modules named `PowerProfile-Dyn.Scripts*`.
+    But wait, there is a forth dynamic module, what's that? This leads us to the second meaning of "power" in PowerProfile:
+
+    2. Functional folders
+    ---------------------
+
+    Every profile directory can contain the following folders:
+
+    - `Config`
+    - `Functions`
+    - `Modules`
+    - `Scripts`
+
+    A `Modules` folder is automatically added to `$env:PSModulePath` so any personal PS modules you wrote by yourself can be used easily.
+    You could actually have the same module but in two different Conditional sub-directories and have only the variant loaded that matches
+    the current runtime environment.
+    `Script` folders are automatically added to the `$env:PATH` search path so scripts can be run from anywhere.
+    Note that for performance reasons, `Modules` and `Scripts` folders are only considered when they are not empty at the beginning of a new
+    PowerShell session.
+
+    `Functions` folders are mostly self-explanatory: Save your `.ps1` function files that you require in your profile scripts or during your
+    interactive terminal session (in case you don't want to write an entire PS module). You may follow the best practice to use a single
+    file per function, but generally that's up to you.
+    Functions are loaded into a single dynamic PS module before any other profile scripts run.
+
+    The `Config` folder contains optional configuration files for PowerProfile. You may add them here manually or use the `*-PoProfileConfig`
+    commands instead.
+    You can also create sub-folders for any 3rd-party configurations and use the `Get-PoProfileContent` command in your scripts to retrieve a
+    list of config files that PowerProfile detected:
+
+        PS> (Get-PoProfileContent).Config.Profile
+
+        Name                           Value
+        ----                           -----
+        PSModules                      {ABC.modules.psd1, XYZ.modules.psd1}
+        Homebrew                       {Brewfile, Next.Brewfile, Another.Brewfile}
+
+    Note that this example shows a structure that is used by the PowerProfile extention module `PowerProfile.Core.Extension`.
+
+    Based on this flexibility, there are supplementary add-on modules for PowerProfile that can provide an entire pre-configured PowerShell profile,
+    even ready-to-go for different user roles like "Microsoft 365 Admin" or "PowerShell Administrator".
+
+    To find PowerProfile add-on modules, go to https://www.powershellgallery.com/profiles/PowerProfile or use the `Find-Module` command:
+
+        PS> Find-Module -Tag PowerProfile.Addon
+
+TROUBLESHOOTING NOTE:
+    For issues and community discussion, visit the GitHub repository:
+    https://github.com/PowerProfile/PowerProfile
+
+SEE ALSO
+  - https://PowerProfile.sh/
+
+KEYWORDS
+    Profile, PSProfile, PowerShellProfile, PoshProfile,  Environment
