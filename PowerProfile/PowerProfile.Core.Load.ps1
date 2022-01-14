@@ -67,7 +67,7 @@ if ($null -eq $PoProfileOriginScriptPath) {
 
         Write-PoProfileProgress -ScriptTitleType Confirmation -ScriptTitle 'PowerProfile Setup COMPLETED !'
         Write-PoProfileProgress -ScriptTitleType Note -NoCounter -ScriptTitle ('Use the '+'`'+"$($PSStyle.Italic)New-PowerProfile$($PSStyle.ItalicOff)"+'`'+' command to create profile directories.')
-        Write-PoProfileProgress -ScriptTitleType Note -NoCounter -ScriptTitle ('Type '+'`'+"$($PSStyle.Italic)Get-Help PowerProfile$($PSStyle.ItalicOff)"+'`'+' for more details,')
+        Write-PoProfileProgress -ScriptTitleType Note -NoCounter -ScriptTitle ('Type '+'`'+"$($PSStyle.Italic)help PowerProfile$($PSStyle.ItalicOff)"+'`'+' for more details,')
         Write-PoProfileProgress -ScriptTitleType Note -NoCounter -ScriptTitle ("or visit $($PSStyle.FormatHyperlink('the PowerProfile website','https://PowerProfile.sh/')) to learn more about PowerProfile.")
     }
 }
@@ -87,6 +87,8 @@ elseif ($PoProfileOriginScriptPath -ne $PROFILE.CurrentUserAllHosts) {
     throw 'PowerProfile can not be imported into other PowerShell scripts or modules'
 }
 
+[Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12
+
 if (-Not (Get-Module -Name PowerProfile.Commands -ListAvailable)) {
     Write-PoProfileProgress -ProfileTitle 'PowerProfile Initialization' -ScriptTitle 'Installing module `PowerProfile.Commands`'
 
@@ -100,7 +102,6 @@ if (-Not (Get-Module -Name PowerProfile.Commands -ListAvailable)) {
         if ($null -ne (Import-PowerShellDataFile (Join-Path $PSScriptRoot 'PowerProfile.psd1')).PrivateData.PSData.Prerelease) {
             $cmd += ' -AllowPrerelease'
         }
-        [Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12
         Set-PSRepository -Name PSGallery -InstallationPolicy Trusted
     }
 

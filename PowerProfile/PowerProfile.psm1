@@ -170,12 +170,12 @@ function Initialize-Profiles {
 }
 
 # Load narrow profile
-if ($IsCommand) {
+if ($null -ne $IsCommand) {
     Initialize-Profiles
 }
 
 # Load full interactive profile
-if(-Not $IsCommand -or $IsNoExit) {
+if($null -eq $IsCommand -or $null -ne $IsNoExit) {
 
     # Environment notices
     if ($null -eq $env:PSLVL -and $null -eq $IsNoExit) {
@@ -194,7 +194,7 @@ if(-Not $IsCommand -or $IsNoExit) {
     }
 
     # Load scripts from narrow profile if not loaded already
-    if ($null -ne $IsCommand) {
+    if ($null -eq $IsCommand) {
         Initialize-Profiles
     }
 

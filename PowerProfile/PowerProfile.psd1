@@ -148,7 +148,7 @@ https://github.com/PowerProfile/PowerProfile
 '@
 
         # Prerelease string of this module
-        Prerelease = '-alpha2'
+        Prerelease = '-alpha3'
 
         # Flag to indicate whether the module requires explicit user acceptance for install/update/save
         RequireLicenseAcceptance = $false
