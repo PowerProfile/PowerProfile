@@ -713,7 +713,7 @@ function Find-PoProfileContent {
                                 Config {
 
                                     # Top directory for PowerProfile specific config only
-                                    [string[]]$files = [System.IO.Directory]::EnumerateFiles($p,'*.config.json','TopDirectoryOnly')
+                                    [string[]]$files = [System.IO.Directory]::EnumerateFiles($p,'*','TopDirectoryOnly')
                                     [array]::Sort($files)
                                     foreach ($file in $files) {
                                         $Node = Split-Path -Leaf $file
@@ -1011,8 +1011,8 @@ Set-Alias -Name pwsh-preview -Value pwsh
 #endregion
 
 #region Functions: PowerShellGet
-function Invoke-PoProfileInstallModule {
-    [Alias('Install-Module')]
+function Invoke-PoProfileInstallPSResource {
+    [Alias('Install-PSResource')]
     [CmdletBinding(DefaultParameterSetName='NameParameterSet', SupportsShouldProcess=$true, ConfirmImpact='Medium', HelpUri='https://go.microsoft.com/fwlink/?LinkID=398573')]
     param(
         [Parameter(ParameterSetName='NameParameterSet', Mandatory=$true, Position=0, ValueFromPipelineByPropertyName=$true)]
@@ -1110,7 +1110,7 @@ function Invoke-PoProfileInstallModule {
                 $PSBoundParameters['OutBuffer'] = 1
             }
 
-            $wrappedCmd = $ExecutionContext.InvokeCommand.GetCommand('Install-Module', [System.Management.Automation.CommandTypes]::Function)
+            $wrappedCmd = $ExecutionContext.InvokeCommand.GetCommand('Install-PSResource', [System.Management.Automation.CommandTypes]::Function)
             $scriptCmd = {& $wrappedCmd @PSBoundParameters }
 
             $steppablePipeline = $scriptCmd.GetSteppablePipeline()
@@ -1139,7 +1139,7 @@ function Invoke-PoProfileInstallModule {
     }
     <#
 
-    .ForwardHelpTargetName Install-Module
+    .ForwardHelpTargetName Install-PSResource
     .ForwardHelpCategory Function
 
     #>

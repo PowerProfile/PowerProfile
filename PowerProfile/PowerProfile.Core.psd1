@@ -77,7 +77,7 @@ FunctionsToExport = @(
     'Get-PoProfileProfilesList'
     'Get-PoProfileState'
     'Get-PoProfileSubDirs'
-    'Invoke-PoProfileInstallModule'
+    'Invoke-PoProfileInstallPSResource'
     'pwsh'
     'Remove-PoProfileConfig'
     'Remove-PoProfileState'
