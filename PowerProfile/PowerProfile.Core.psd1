@@ -93,18 +93,11 @@ FunctionsToExport = @(
 CmdletsToExport = @()
 
 # Variables to export from this module
-VariablesToExport = @(
-    'IsCommand'
-    'IsLogin'
-    'IsNoExit'
-    'IsNonInteractive'
-    'PROFILEHOME'
-    'PSStyle'
-)
+# VariablesToExport = @()
 
 # Aliases to export from this module, for best performance, do not use wildcards and do not delete the entry, use an empty array if there are no aliases to export.
 AliasesToExport = @(
-    'Install-Module'
+    'Install-PSResource'
     'pwsh-preview'
 )
 

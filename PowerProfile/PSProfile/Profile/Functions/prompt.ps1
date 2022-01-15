@@ -16,17 +16,18 @@ function prompt {
         $LastCmd = Get-History -Count 1
         if ($null -ne $LastCmd) {
             $DurColor = $PSStyle.Foreground.Green
-            $CmdDur = $LastCmd.Duration.TotalMilliseconds
+            $LastCmdDuration = New-TimeSpan -Start $LastCmd.StartExecutionTime -End $LastCmd.EndExecutionTime
+            $CmdDur = $LastCmdDuration.TotalMilliseconds
             $u = 'ms'
             if ($CmdDur -gt 250 -and $CmdDur -lt 1000) {
                 $DurColor = $PSStyle.Foreground.Yellow
             } elseif ($CmdDur -ge 1000) {
                 $DurColor = $PSStyle.Foreground.Red
                 if ($CmdDur -ge 60000) {
-                    $CmdDur = $LastCmd.Duration.TotalMinutes
+                    $CmdDur = $LastCmdDuration.TotalMinutes
                     $u = 'm'
                 } else {
-                    $CmdDur = $LastCmd.Duration.TotalSeconds
+                    $CmdDur = $LastCmdDuration.TotalSeconds
                     $u = 's'
                 }
             }
@@ -36,10 +37,10 @@ function prompt {
         $Path = $executionContext.SessionState.Path.CurrentLocation.Path
         $MaxLength = [int](([Console]::WindowWidth) / 2)
         if ($Path.Length -gt $MaxLength) {
-            $Path = '…' + $Path.SubString($Path.Length - $MaxLength)
+            $Path = $PSStyle.Foreground.BrightBlack + [char]0x2026 + $PSStyle.Foreground.Reset + $Path.SubString($Path.Length - $MaxLength)
         }
 
-        "${Runtime}${Path}`n$(if(0 -lt $env:SHLVL){"$($PSStyle.Foreground.BrightBlack)($env:SHLVL) "}else{''})${PromptExit}PS$(if($env:IsElevated){" $($PSStyle.Foreground.BrightRed)‼$($PSStyle.Reset)"}else{$PSStyle.Reset})$('>' * ($nestedPromptLevel + 1)) ";
+        "${Runtime}${Path}`n$(if(0 -lt $env:SHLVL){"$($PSStyle.Foreground.BrightBlack)($env:SHLVL) "}else{''})${PromptExit}PS$(if($env:IsElevated){' '+$PSStyle.Foreground.BrightRed+[char]0x203C+$PSStyle.Reset}else{$PSStyle.Reset})$('>' * ($nestedPromptLevel + 1)) ";
 
         try {
             $Path = "$env:USER@$env:COMPUTERNAME" + ':' + $($PWD.Path -replace $HOME,'~')

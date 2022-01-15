@@ -91,22 +91,29 @@ AliasesToExport = @()
 # DscResourcesToExport = @()
 
 # List of all modules packaged with this module
-# ModuleList = @()
+ModuleList = @(
+    '.\PowerProfile.Core.psd1'
+)
 
 # List of all files packaged with this module
-#   ((((Get-ChildItem -File -Recurse).FullName) -Replace ([string]$PWD + ([System.IO.Path]::DirectorySeparatorChar)),"'") -replace '$',"'") -replace '/','\' | Sort-Object -Descending
+#   ((((Get-ChildItem -File -Recurse).FullName) -Replace ([string]$PWD + ([System.IO.Path]::DirectorySeparatorChar)),"'.\") -replace '$',"'") -replace '/','\'
 FileList = @(
-    'PowerProfile.psm1'
-    'PowerProfile.psd1'
-    'PowerProfile.Core.Load.ps1'
-    'PowerProfile.Core.psm1'
-    'profile.ps1'
-    'en-US\about_PowerProfile.help.txt'
-    'PSProfile\Profile\_Platform_NonWindows\Config\PSModules\PowerProfile.Core.modules.psd1'
-    'PSProfile\Profile\_Platform_NonWindows\PSReadline.IsHidden.ps1'
-    'PSProfile\Profile\_Platform_NonWindows\UnixCompleters.IsHidden.ps1'
-    'PSProfile\Profile\_Platform_Windows\PSReadline.IsHidden.ps1'
-    'PSProfile\Profile\Functions\prompt.ps1'
+    '.\PowerProfile.Core.Load.ps1'
+    '.\PowerProfile.Core.psd1'
+    '.\PowerProfile.Core.psm1'
+    '.\PowerProfile.psd1'
+    '.\PowerProfile.psm1'
+    '.\profile.ps1'
+    '.\PSProfile\Profile\0001.PoProfile-PowerShell Package Management validation.IsProfileSetup.ps1'
+    '.\PSProfile\Profile\0001.PoProfile-PowerShellGet validation.IsProfileSetup.ps1'
+    '.\PSProfile\Profile\_Platform_Windows\PSReadline.IsHidden.ps1'
+    '.\PSProfile\Profile\Config\PoProfile-PSPackageManagement.psd1'
+    '.\PSProfile\Profile\Config\PoProfile-PSPowerShellGet.psd1'
+    '.\PSProfile\Profile\_Platform_NonWindows\PSReadline.IsHidden.ps1'
+    '.\PSProfile\Profile\_Platform_NonWindows\UnixCompleters.IsHidden.ps1'
+    '.\PSProfile\Profile\_Platform_NonWindows\Config\PSModules\PowerProfile.Core.modules.psd1'
+    '.\PSProfile\Profile\Functions\prompt.ps1'
+    '.\en-US\about_PowerProfile.help.txt'
 )
 
 # Private data to pass to the module specified in RootModule/ModuleToProcess. This may also contain a PSData hashtable with additional module metadata used by PowerShell.

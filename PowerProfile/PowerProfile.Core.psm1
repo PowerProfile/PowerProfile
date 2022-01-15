@@ -4,57 +4,58 @@
 if ($null -eq $PSStyle) {
 
     # Lazy support for PSStyle for PS version <7.2.0
+    $e = [char]27
     $Script:PSStyle = [PSCustomObject]@{
-        Reset = "`e[0m"
-        BlinkOff = "`e[25m"
-        Blink = "`e[5m"
-        BoldOff = "`e[22m"
-        Bold = "`e[1m"
-        HiddenOff = "`e[28m"
-        Hidden = "`e[8m"
-        ReverseOff = "`e[27m"
-        Reverse = "`e[7m"
-        ItalicOff = "`e[23m"
-        Italic = "`e[3m"
-        UnderlineOff = "`e[24m"
-        Underline = "`e[4m"
-        StrikethroughOff = "`e[29m"
-        Strikethrough = "`e[9m"
+        Reset = "$e[0m"
+        BlinkOff = "$e[25m"
+        Blink = "$e[5m"
+        BoldOff = "$e[22m"
+        Bold = "$e[1m"
+        HiddenOff = "$e[28m"
+        Hidden = "$e[8m"
+        ReverseOff = "$e[27m"
+        Reverse = "$e[7m"
+        ItalicOff = "$e[23m"
+        Italic = "$e[3m"
+        UnderlineOff = "$e[24m"
+        Underline = "$e[4m"
+        StrikethroughOff = "$e[29m"
+        Strikethrough = "$e[9m"
         Foreground = @{
-            Black = "`e[30m"
-            Red = "`e[31m"
-            Green = "`e[32m"
-            Yellow = "`e[33m"
-            Blue = "`e[34m"
-            Magenta = "`e[35m"
-            Cyan = "`e[36m"
-            White = "`e[37m"
-            BrightBlack = "`e[90m"
-            BrightRed = "`e[91m"
-            BrightGreen = "`e[92m"
-            BrightYellow = "`e[93m"
-            BrightBlue = "`e[94m"
-            BrightMagenta = "`e[95m"
-            BrightCyan = "`e[96m"
-            BrightWhite = "`e[97m"
+            Black = "$e[30m"
+            Red = "$e[31m"
+            Green = "$e[32m"
+            Yellow = "$e[33m"
+            Blue = "$e[34m"
+            Magenta = "$e[35m"
+            Cyan = "$e[36m"
+            White = "$e[37m"
+            BrightBlack = "$e[90m"
+            BrightRed = "$e[91m"
+            BrightGreen = "$e[92m"
+            BrightYellow = "$e[93m"
+            BrightBlue = "$e[94m"
+            BrightMagenta = "$e[95m"
+            BrightCyan = "$e[96m"
+            BrightWhite = "$e[97m"
         }
         Background = @{
-            Black = "`e[40m"
-            Red = "`e[41m"
-            Green = "`e[42m"
-            Yellow = "`e[43m"
-            Blue = "`e[44m"
-            Magenta = "`e[45m"
-            Cyan = "`e[46m"
-            White = "`e[47m"
-            BrightBlack = "`e[100m"
-            BrightRed = "`e[101m"
-            BrightGreen = "`e[102m"
-            BrightYellow = "`e[103m"
-            BrightBlue = "`e[104m"
-            BrightMagenta = "`e[105m"
-            BrightCyan = "`e[106m"
-            BrightWhite = "`e[107m"
+            Black = "$e[40m"
+            Red = "$e[41m"
+            Green = "$e[42m"
+            Yellow = "$e[43m"
+            Blue = "$e[44m"
+            Magenta = "$e[45m"
+            Cyan = "$e[46m"
+            White = "$e[47m"
+            BrightBlack = "$e[100m"
+            BrightRed = "$e[101m"
+            BrightGreen = "$e[102m"
+            BrightYellow = "$e[103m"
+            BrightBlue = "$e[104m"
+            BrightMagenta = "$e[105m"
+            BrightCyan = "$e[106m"
+            BrightWhite = "$e[107m"
         }
     }
 
@@ -63,7 +64,7 @@ if ($null -eq $PSStyle) {
         InputObject = $PSStyle
         Name = 'FormatHyperlink'
         Value = {
-            return $("`e]8;;"+$args[1]+"`e\"+$args[0]+"`e]8;;`e\")
+            return $("$e]8;;"+$args[1]+"$e\"+$args[0]+"$e]8;;$e\")
         }
     }
     Add-Member @Parameters
@@ -1193,13 +1194,79 @@ switch -Regex (@([System.Environment]::GetCommandLineArgs())) {
         continue
     }
 }
-if (-Not $IsNonInteractive -and -not [System.Environment]::UserInteractive) {
+if ($null -eq $IsCommand) {
+    $Parameters = @{
+        Scope = 'Script'
+        Name = 'IsCommand'
+        Value = $false
+        Option = 'ReadOnly'
+    }
+    Set-Variable @Parameters
+}
+if ($null -eq $IsLogin) {
+    $Parameters = @{
+        Scope = 'Script'
+        Name = 'IsLogin'
+        Value = $false
+        Option = 'ReadOnly'
+    }
+    Set-Variable @Parameters
+}
+if ($null -eq $IsNoExit) {
+    $Parameters = @{
+        Scope = 'Script'
+        Name = 'IsNoExit'
+        Value = $false
+        Option = 'ReadOnly'
+    }
+    Set-Variable @Parameters
+}
+if ($null -eq $IsNonInteractive) {
+    if ($null -eq [System.Environment]::UserInteractive) {
+        $v = $true
+    } else {
+        $v = $false
+    }
     $Parameters = @{
         Scope = 'Script'
         Name = 'IsNonInteractive'
+        Value = $v
+        Option = 'ReadOnly'
+    }
+    Set-Variable @Parameters
+}
+
+# Cross-platform compatibility for Windows PowerShell
+if ($PSEdition -eq 'Desktop') {
+    $Parameters = @{
+        Scope = 'Script'
+        Name = 'IsCoreCLR'
+        Value = $false
+        Option = 'ReadOnly'
+    }
+    Set-Variable @Parameters
+
+    $Parameters = @{
+        Scope = 'Script'
+        Name = 'IsLinux'
+        Value = $false
+        Option = 'ReadOnly'
+    }
+    Set-Variable @Parameters
+
+    $Parameters = @{
+        Scope = 'Script'
+        Name = 'IsMacOS'
+        Value = $false
+        Option = 'ReadOnly'
+    }
+    Set-Variable @Parameters
+
+    $Parameters = @{
+        Scope = 'Script'
+        Name = 'IsWindows'
         Value = $true
         Option = 'ReadOnly'
-        Description = 'PowerShell is running non-interactive mode'
     }
     Set-Variable @Parameters
 }
@@ -1230,7 +1297,7 @@ else {
 }
 
 $PROFILEHOME = Split-Path $PROFILE
-$env:PSHOST_PROGRAM  = (Split-Path -LeafBase $PROFILE.CurrentUserCurrentHost).Replace('Microsoft.','') -replace '_profile$'
+$env:PSHOST_PROGRAM  = (Split-Path -Leaf $PROFILE.CurrentUserCurrentHost).Replace('Microsoft.','') -replace '_profile\.[^.]*$',''
 $env:LC_PSHOST = $(
     if ($env:PSHOST_PROGRAM -eq 'PowerShell') {
         if ($IsCoreCLR) {
@@ -1252,7 +1319,8 @@ if ($null -eq $env:PSLVL) {
         $env:HOSTNAME        = $env:COMPUTERNAME
         $env:XDG_DATA_HOME   = [System.Environment]::GetFolderPath('LocalApplicationData')
         $env:XDG_CONFIG_HOME = [System.Environment]::GetFolderPath('ApplicationData')
-        $env:XDG_STATE_HOME  = [System.IO.Path]::Combine($env:XDG_DATA_HOME,'.State')
+        $env:XDG_STATE_HOME  = [System.IO.Path]::Combine($env:XDG_DATA_HOME,'State')
+        $env:XDG_CACHE_HOME  = [System.IO.Path]::Combine($env:XDG_DATA_HOME,'Cache')
 
         $WindowsPrincipal = [Security.Principal.WindowsPrincipal]::new([Security.Principal.WindowsIdentity]::GetCurrent())
         if ($WindowsPrincipal.IsInRole([Security.Principal.WindowsBuiltInRole]::Administrator) -eq 1) {
@@ -1306,6 +1374,7 @@ if ($null -eq $env:PSLVL) {
         $env:XDG_DATA_HOME          = [System.IO.Path]::Combine(([System.Environment]::GetFolderPath('UserProfile')),'.local','share')
         $env:XDG_CONFIG_HOME        = [System.IO.Path]::Combine(([System.Environment]::GetFolderPath('UserProfile')),'.config')
         $env:XDG_STATE_HOME         = [System.IO.Path]::Combine(([System.Environment]::GetFolderPath('UserProfile')),'.local','state')
+        $env:XDG_CACHE_HOME         = [System.IO.Path]::Combine(([System.Environment]::GetFolderPath('UserProfile')),'.cache')
 
         if (0 -eq (id -u)) {
             $env:IsElevated = $true
@@ -1359,6 +1428,10 @@ $Exports = @{
         'IsLogin'
         'IsNoExit'
         'IsNonInteractive'
+        'IsCoreCLR'
+        'IsLinux'
+        'IsMacOS'
+        'IsWindows'
         'PROFILEHOME'
         'PSStyle'
     )

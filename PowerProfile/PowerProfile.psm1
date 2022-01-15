@@ -2,6 +2,9 @@
 #Requires -Modules 'PowerProfile.Core'
 
 $ExecutionContext.SessionState.Module.OnRemove = {
+    function Global:prompt {
+        "PS $($executionContext.SessionState.Path.CurrentLocation)$('>' * ($nestedPromptLevel + 1)) ";
+    }
     Remove-Module -Force -Name PowerProfile-Dyn.* -ErrorAction Ignore
     Remove-Module -Force -Name PowerProfile.Core.Load -ErrorAction Ignore
     Remove-Module -Force -Name PowerProfile.Core -ErrorAction Ignore
@@ -48,7 +51,7 @@ function Initialize-Profiles {
                     $null = . (Get-PoProfileContent).Functions.$key
                 }
                 catch {
-                    Write-PoProfileItemProgress -ItemTitle 'Failed to import functions' -ItemTextColor $PSStyle.Foreground.BrightRed -Depth 1 -ItemText ((Split-Path -LeafBase $key) -replace '(^[0-9][\w.]*-)')
+                    Write-PoProfileItemProgress -ItemTitle 'Failed to import functions' -ItemTextColor $PSStyle.Foreground.BrightRed -Depth 1 -ItemText (((Split-Path -Leaf $key) -replace '^[0-9][\w.]*-','') -replace '\.[^.]*$','')
                 }
             }
             Export-ModuleMember -Function * -Alias * -Variable @()
@@ -186,7 +189,7 @@ if($null -eq $IsCommand -or $null -ne $IsNoExit) {
         if ($null -ne $env:IsProfileRedirected) {
             Write-PoProfileProgress -ScriptTitle 'Your profile is synced using OneDrive:','PowerShell modules will preferably be installed in global machine scpope instead of user scope.' -ScriptTitleType Information
             if ($IsWindows) {
-                Start-Job -Name 'PROFILEHOMEAttr' -WorkingDirectory $PROFILEHOME -ScriptBlock { attrib.exe +P "$PROFILEHOME"; attrib.exe +P /S /D /L }
+                Start-Job -Name 'PROFILEHOMEAttr' -ScriptBlock { attrib.exe +P "$PROFILEHOME"; Push-Location $PROFILEHOME; attrib.exe +P /S /D /L }
             }
         }
     }
