@@ -1352,3 +1352,15 @@ if ($null -eq $env:PSLVL) {
 #endregion
 
 Get-PoProfileContent
+
+$Exports = @{
+    Variable = @(
+        'IsCommand'
+        'IsLogin'
+        'IsNoExit'
+        'IsNonInteractive'
+        'PROFILEHOME'
+        'PSStyle'
+    )
+}
+Export-ModuleMember @Exports

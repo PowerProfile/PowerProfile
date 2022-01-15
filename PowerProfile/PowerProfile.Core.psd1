@@ -98,7 +98,6 @@ VariablesToExport = @(
     'IsLogin'
     'IsNoExit'
     'IsNonInteractive'
-    'PoProfileUnicode'
     'PROFILEHOME'
     'PSStyle'
 )
