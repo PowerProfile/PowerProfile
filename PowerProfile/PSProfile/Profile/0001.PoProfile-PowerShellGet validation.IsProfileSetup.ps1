@@ -77,29 +77,14 @@ if (
             }
         }
 
-        if ($true -ne (Get-PSResourceRepository -Name PSGallery).Trusted) {
-            try {
-                Write-PoProfileProgress -ScriptTitle 'Trusting source repository `PSGallery`'
-                Set-PSResourceRepository -Name PSGallery -Trusted
-                $MadeChanges = $true
-            }
-            catch {
-                if ($null -eq $PSGetState.ErrorMessage) {
-                    $PSGetState.ErrorMessage = @()
-                }
-                $PSGetState.ErrorMessage += 'Trusting source repository `PSGallery`: ' + $_.Exception.Message
-                $PSGetState.State = 'Error'
-            }
-        }
-
         if ($null -ne $Cfg.PSResourceRepository) {
             foreach ($Repo in $Cfg.PSResourceRepository) {
                 try {
-                    if (Get-PSResourceRepository -Name $Repo.Name) {
-                        Write-PoProfileProgress -ScriptTitle ('Updating source repository `' + $Repo.Name + '`')
+                    if (Get-PSResourceRepository -Name $Repo.Name -ErrorAction Ignore) {
+                        Write-PoProfileProgress -ScriptTitle ('Updating source repository ' + $PSStyle.Italic + $Repo.Name + $PSStyle.ItalicOff)
                         Set-PSResourceRepository @Repo
                     } else {
-                        Write-PoProfileProgress -ScriptTitle ('Registering source repository `' + $Repo.Name + '`')
+                        Write-PoProfileProgress -ScriptTitle ('Registering source repository ' + $PSStyle.Italic + $Repo.Name + $PSStyle.ItalicOff)
                         Register-PSResourceRepository @Repo
                     }
                 }
