@@ -43,8 +43,12 @@ function prompt {
         "${Runtime}${Path}`n$(if(0 -lt $env:SHLVL){"$($PSStyle.Foreground.BrightBlack)($env:SHLVL) "}else{''})${PromptExit}PS$(if($env:IsElevated){' '+$PSStyle.Foreground.BrightRed+[char]0x203C+$PSStyle.Reset}else{$PSStyle.Reset})$('>' * ($nestedPromptLevel + 1)) ";
 
         try {
-            $Path = "$env:USER@$env:COMPUTERNAME" + ':' + $($PWD.Path -replace $HOME,'~')
-            $Host.UI.RawUI.WindowTitle = if ($env:IsElevated -and $IsWindows) {'Admin: ' + $Path} else {$Path}
+            if ($IsWindows) {
+                $Path = "$env:COMPUTERNAME" + ':' + $($PWD.Path -replace [regex]::Escape($HOME),'~')
+                $host.UI.RawUI.WindowTitle = $(if ($env:IsElevated) {'Admin: ' + $Path} else {$Path})
+            } else {
+                $host.UI.RawUI.WindowTitle = "$env:USER@$env:HOSTNAME" + ':' + $($PWD.Path -replace [regex]::Escape($HOME),'~')
+            }
         }
         catch {
             # nothing to do
