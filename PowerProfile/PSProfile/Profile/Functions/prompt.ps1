@@ -34,7 +34,7 @@ function prompt {
             $Runtime = "$($PSStyle.Foreground.BrightBlack)[$DurColor$($CmdDur.ToString('#.##'))$u$($PSStyle.Foreground.BrightBlack)]$($PSStyle.Reset) "
         }
 
-        $Path = $executionContext.SessionState.Path.CurrentLocation.Path
+        $Path = $executionContext.SessionState.Path.CurrentLocation.Path -replace [regex]::Escape($HOME),'~'
         $MaxLength = [int](([Console]::WindowWidth) / 2)
         if ($Path.Length -gt $MaxLength) {
             $Path = $PSStyle.Foreground.BrightBlack + [char]0x2026 + $PSStyle.Foreground.Reset + $Path.SubString($Path.Length - $MaxLength)
@@ -44,7 +44,7 @@ function prompt {
 
         try {
             if ($IsWindows) {
-                $Path = "$env:COMPUTERNAME" + ':' + $($PWD.Path -replace [regex]::Escape($HOME),'~')
+                $Path = "$env:COMPUTERNAME" + ':' + $($executionContext.SessionState.Path.CurrentLocation.Path -replace [regex]::Escape($HOME),'~')
                 $host.UI.RawUI.WindowTitle = $(if ($env:IsElevated) {'Admin: ' + $Path} else {$Path})
             } else {
                 $host.UI.RawUI.WindowTitle = "$env:USER@$env:HOSTNAME" + ':' + $($PWD.Path -replace [regex]::Escape($HOME),'~')
