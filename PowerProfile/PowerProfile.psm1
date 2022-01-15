@@ -183,12 +183,10 @@ if($null -eq $IsCommand -or $null -ne $IsNoExit) {
         if ($null -ne $env:IsElevated) {
             Write-PoProfileProgress -ScriptTitle 'Careful! Running session with ELEVATED PRIVILEGES' -ScriptTitleType Warning
         }
-        elseif ($null -ne $env:IsProfileRedirected) {
+        if ($null -ne $env:IsProfileRedirected) {
             Write-PoProfileProgress -ScriptTitle 'Your profile is synced using OneDrive:','PowerShell modules will preferably be installed in global machine scpope instead of user scope.' -ScriptTitleType Information
             if ($IsWindows) {
-                Push-Location $PROFILEHOME
-                $null = attrib +P /s
-                Pop-Location
+                Start-Job -Name 'PROFILEHOMEAttr' -WorkingDirectory $PROFILEHOME -ScriptBlock { attrib.exe +P "$PROFILEHOME"; attrib.exe +P /S /D /L }
             }
         }
     }
