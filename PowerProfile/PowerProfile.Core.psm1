@@ -71,167 +71,6 @@ if ($null -eq $PSStyle) {
 }
 #endregion
 
-#region Functions: Config
-function Set-PoProfileConfig {
-
-<#
-.SYNOPSIS
-    Add/change/remove a PowerProfile config item
-
-.DESCRIPTION
-    Adds an item to the PowerProfile configuration
-
-.PARAMETER Name
-    Key name of the state item
-
-.PARAMETER Value
-    Value of the state item
-
-.PARAMETER Remove
-    Removes the desired state item
-
-.LINK
-    https://PowerProfile.sh/
-#>
-
-    [CmdletBinding(DefaultParameterSetName='SetKey')]
-    Param(
-        [Parameter(Mandatory=$True,Position=0,ParameterSetName='SetKey')]
-        [Parameter(Mandatory=$True,Position=0,ParameterSetName='RemoveKey')]
-        [string]$Name,
-
-        [Parameter(Mandatory=$True,Position=1,ParameterSetName='SetKey')]
-        [AllowEmptyString()]
-        [AllowNull()]
-        $Value,
-
-        [Parameter(Mandatory=$True,ParameterSetName='RemoveKey')]
-        [switch]$Remove
-    )
-
-    if ($Value -eq [bool]::TrueString -or $Value -eq [bool]::FalseString) {
-        $Value = [System.Convert]::ToBoolean($Value)
-    }
-    if ($Remove) {
-        $PoProfileConfig.PSObject.Properties.Remove($Name)
-    }
-    elseif ($null -eq $PoProfileConfig.PSObject.Properties.Item($Name)) {
-        $PoProfileConfig | Add-Member -MemberType NoteProperty -Name $Name -Value $Value
-    }
-    else {
-        $PoProfileConfig.$Name = $Value
-    }
-
-    $p = [System.IO.Path]::Combine(
-            $env:XDG_CONFIG_HOME,
-            $(
-                if ($IsWindows) {
-                    'PowerShell'
-                } else {
-                    'powershell'}
-            ),
-            'Modules',
-            'PowerProfile',
-            'PowerProfile.state.json'
-        )
-
-    if (($PoProfileConfig.PSObject.Properties).Count -gt 0) {
-        $baseDir = Split-Path -Path $p
-        if (-Not ([System.IO.Directory]::Exists($baseDir))) {
-            $null = New-Item -Type Container -Force $baseDir -ErrorAction Stop
-        }
-        ConvertTo-Json $PoProfileConfig -Compress | Set-Content -Path $p -Encoding ASCII
-    } elseif ([System.IO.File]::Exists($p)) {
-        Remove-Item -Path $p -ErrorAction Ignore
-    }
-}
-
-function Get-PoProfileConfig {
-
-<#
-.SYNOPSIS
-    Get PowerProfile config
-
-.DESCRIPTION
-    Reads the PowerProfile config
-
-.PARAMETER Name
-    Return the value of a specific config item only
-
-.OUTPUTS
-    String, when specifying $Name, otherwise PSObject.
-
-.LINK
-    https://PowerProfile.sh/
-#>
-
-    [CmdletBinding()]
-    Param(
-        [string]$Name
-    )
-
-    $p = [System.IO.Path]::Combine(
-        $env:XDG_STATE_HOME,
-        $(
-            if ($IsWindows) {
-                'PowerShell'
-            } else {
-                'powershell'
-            }
-        ),
-        'Modules',
-        'PowerProfile',
-        'PowerProfile.state.json'
-    )
-
-    if (-Not (Get-Variable -Scope Script -Name 'PoProfileState' -ErrorAction Ignore)) {
-        if ([System.IO.File]::Exists($p)) {
-            $PoProfileConfig = [System.IO.File]::ReadAllText($p) | ConvertFrom-Json -ErrorAction Ignore
-        } else {
-            $PoProfileConfig = New-Object PSObject
-        }
-    }
-
-    if ($Name -and $PoProfileConfig.$Name) {
-        $PoProfileConfig.$Name
-    } else {
-        $PoProfileConfig
-    }
-}
-
-function Remove-PoProfileConfig {
-
-<#
-.SYNOPSIS
-    Remove PowerProfile config item
-
-.DESCRIPTION
-    Removes a state item from PowerProfile
-
-.PARAMETER Name
-    Key name of the state item
-
-.LINK
-    https://PowerProfile.sh/
-#>
-
-    [CmdletBinding()]
-    [OutputType([System.Management.Automation.PSObject])]
-    Param(
-        [Parameter(Mandatory=$True)]
-        [string]$Name
-    )
-
-    Try {
-        Set-PoProfileConfig -Remove -Name $Name
-    }
-    Catch {
-        Write-Error $_.Exception.Message
-        return
-    }
-}
-#endregion
-
 #region Functions: State
 function Set-PoProfileState {
 
@@ -1006,7 +845,7 @@ function pwsh {
             $a.Insert(0,'-nol')
         }
     }
-    (Get-Process -Id $PID).Path + " $a" | Invoke-Expression
+    $env:SHELL + " $a" | Invoke-Expression
 }
 Set-Alias -Name pwsh-preview -Value pwsh
 #endregion
@@ -1317,6 +1156,8 @@ if ($null -eq $env:PSLVL) {
         # $PSProgramFilesPath = [System.IO.Path]::Combine(([System.Environment]::GetFolderPath('ProgramFiles')),$PSType)
 
         $env:HOSTNAME        = $env:COMPUTERNAME
+        $env:USER            = $env:USERNAME
+        $env:SHELL           = (Get-Process -Id $PID).Path
         $env:XDG_DATA_HOME   = [System.Environment]::GetFolderPath('LocalApplicationData')
         $env:XDG_CONFIG_HOME = [System.Environment]::GetFolderPath('ApplicationData')
         $env:XDG_STATE_HOME  = [System.IO.Path]::Combine($env:XDG_DATA_HOME,'State')
@@ -1371,6 +1212,8 @@ if ($null -eq $env:PSLVL) {
         $env:PROCESSOR_ARCHITECTURE = $(uname -m).ToUpper() | ForEach-Object { if ($_ -eq 'X86_64') {'AMD64'} else {$_} }
         $env:COMPUTERNAME           = $(hostname -s).ToUpper()
         $env:HOSTNAME               = $env:COMPUTERNAME
+        $env:USERNAME               = $env:USER
+        $env:SHELL                  = (Get-Process -Id $PID).Path
         $env:XDG_DATA_HOME          = [System.IO.Path]::Combine(([System.Environment]::GetFolderPath('UserProfile')),'.local','share')
         $env:XDG_CONFIG_HOME        = [System.IO.Path]::Combine(([System.Environment]::GetFolderPath('UserProfile')),'.config')
         $env:XDG_STATE_HOME         = [System.IO.Path]::Combine(([System.Environment]::GetFolderPath('UserProfile')),'.local','state')
