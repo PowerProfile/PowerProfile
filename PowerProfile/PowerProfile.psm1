@@ -173,15 +173,15 @@ function Initialize-Profiles {
 }
 
 # Load narrow profile
-if ($null -ne $IsCommand) {
+if ($IsCommand) {
     Initialize-Profiles
 }
 
 # Load full interactive profile
-if($null -eq $IsCommand -or $null -ne $IsNoExit) {
+if(-Not $IsCommand -or $IsNoExit) {
 
     # Environment notices
-    if ($null -eq $env:PSLVL -and $null -eq $IsNoExit) {
+    if ($null -eq $env:PSLVL -and -Not $IsNoExit) {
         Write-PoProfileProgress -ProfileTitle 'NOTICE' -ScriptCategory ''
         if ($null -ne $env:IsElevated) {
             Write-PoProfileProgress -ScriptTitle 'Careful! Running session with ELEVATED PRIVILEGES' -ScriptTitleType Warning
@@ -195,7 +195,7 @@ if($null -eq $IsCommand -or $null -ne $IsNoExit) {
     }
 
     # Load scripts from narrow profile if not loaded already
-    if ($null -eq $IsCommand) {
+    if (-Not $IsCommand) {
         Initialize-Profiles
     }
 

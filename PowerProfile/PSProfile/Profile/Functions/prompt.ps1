@@ -37,10 +37,10 @@ function prompt {
         $Path = $executionContext.SessionState.Path.CurrentLocation.Path -replace [regex]::Escape($HOME),'~'
         $MaxLength = [int](([Console]::WindowWidth) / 2)
         if ($Path.Length -gt $MaxLength) {
-            $Path = $PSStyle.Foreground.BrightBlack + [char]0x2026 + $PSStyle.Foreground.Reset + $Path.SubString($Path.Length - $MaxLength)
+            $Path = $PSStyle.Foreground.BrightBlack + $PoProfileUChar.GeneralPunctuation.HorizontalEllipsis + $PSStyle.Foreground.Reset + $Path.SubString($Path.Length - $MaxLength)
         }
 
-        "${Runtime}${Path}`n$(if(0 -lt $env:SHLVL){"$($PSStyle.Foreground.BrightBlack)($env:SHLVL) "}else{''})${PromptExit}PS$(if($env:IsElevated){' '+$PSStyle.Foreground.BrightRed+[char]0x203C+$PSStyle.Reset}else{$PSStyle.Reset})$('>' * ($nestedPromptLevel + 1)) ";
+        "${Runtime}${Path}`n$(if(0 -lt $env:SHLVL){"$($PSStyle.Foreground.BrightBlack)($env:SHLVL) "}else{''})${PromptExit}PS$(if($env:IsElevated){' ' + $PSStyle.Foreground.BrightRed + $PoProfileUChar.GeneralPunctuation.DoubleExclamationMark + $PSStyle.Reset}else{$PSStyle.Reset})$('>' * ($nestedPromptLevel + 1)) ";
 
         try {
             if ($IsWindows) {

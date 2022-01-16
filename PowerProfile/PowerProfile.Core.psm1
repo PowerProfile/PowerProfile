@@ -69,6 +69,13 @@ if ($null -eq $PSStyle) {
     }
     Add-Member @Parameters
 }
+
+$Script:PoProfileUChar = @{
+    GeneralPunctuation = @{
+        HorizontalEllipsis    = [char]0x2026
+        DoubleExclamationMark = [char]0x203C
+    }
+}
 #endregion
 
 #region Functions: State
@@ -1277,6 +1284,7 @@ $Exports = @{
         'IsWindows'
         'PROFILEHOME'
         'PSStyle'
+        'PoProfileUChar'
     )
 }
 Export-ModuleMember @Exports
