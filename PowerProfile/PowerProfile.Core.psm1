@@ -76,6 +76,12 @@ $Script:PoProfileUChar = @{
         DoubleExclamationMark = [char]0x203C
     }
 }
+
+$Script:PoProfileEmoji = @{
+    Symbols = @{
+        white_check_mark = [char]0x2705
+    }
+}
 #endregion
 
 #region Functions: State
@@ -200,7 +206,7 @@ function Get-PoProfileState {
         if ([System.IO.File]::Exists($p)) {
             $Script:PoProfileState = [System.IO.File]::ReadAllText($p) | ConvertFrom-Json -ErrorAction Ignore
         } else {
-            $Script:PoProfileState = New-Object PSObject
+            [PSCustomObject]$Script:PoProfileState = $null
         }
     }
 
@@ -283,7 +289,7 @@ function Reset-PoProfileState {
         if ($Force -or $PSCmdlet.ShouldProcess($p)) {
             Remove-Item -Path $p -ErrorAction Ignore -Confirm:$false
             Remove-Variable -Scope Script -Name PoProfileState -ErrorAction Ignore -Confirm:$false
-            New-Variable -Scope Script -Name PoProfileState -Value (New-Object PSObject)
+            New-Variable -Scope Script -Name PoProfileState -Value [PSCustomObject]@{}
         }
     }
 }
@@ -1158,6 +1164,7 @@ $Exports = @{
         'IsWindows'
         'PROFILEHOME'
         'PSStyle'
+        'PoProfileEmoji'
         'PoProfileUChar'
     )
 }
