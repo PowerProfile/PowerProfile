@@ -186,11 +186,8 @@ if(-Not $IsCommand -or $IsNoExit) {
         if ($null -ne $env:IsElevated) {
             Write-PoProfileProgress -ScriptTitle 'Careful! Running session with ELEVATED PRIVILEGES' -ScriptTitleType Warning
         }
-        if ($null -ne $env:IsProfileRedirected) {
-            Write-PoProfileProgress -ScriptTitle 'Your profile is synced using OneDrive:','PowerShell modules will preferably be installed in global machine scpope instead of user scope.' -ScriptTitleType Information
-            if ($IsWindows) {
-                Start-Job -Name 'PROFILEHOMEAttr' -ScriptBlock { attrib.exe +P "$PROFILEHOME"; Push-Location $PROFILEHOME; attrib.exe +P /S /D /L }
-            }
+        if ($IsWindows -and $null -ne $env:IsProfileRedirected) {
+            Start-Job -Name 'PROFILEHOMEAttr' -ScriptBlock { attrib.exe +P $PROFILEHOME; Push-Location $PROFILEHOME; attrib.exe +P /S /D /L }
         }
     }
 
@@ -199,7 +196,7 @@ if(-Not $IsCommand -or $IsNoExit) {
         Initialize-Profiles
     }
 
-    Write-PoProfileProgress -ProfileTitle 'INITIALIZATION COMPLETED'
+    Write-PoProfileProgress -ProfileTitle 'INITIALIZATION COMPLETED' # just to get newline in case we had output before
     Remove-Variable PoProfileTmp* -Scope Global -ErrorAction Ignore
 }
 #endregion

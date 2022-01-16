@@ -61,11 +61,7 @@ EXAMPLES
     These are environment variables specifically curated by PowerProfile for you:
 
         - `$env:IsElevated`                 (Set when `pwsh` was started with administrative/root privileges.)
-        - `$env:IsProfileRedirected`        (Set when the user profile is stored outside of the regular folder.
-                                              Currently, this is set when folder redirection is enabled for OneDrive on
-                                              Windows. PowerProfile provides a proxy `Install-Module` command that will make
-                                              use of this information to avoid OneDrive sync issues by keeping the PowerShell profile
-                                              as little as possible.)
+        - `$env:IsProfileRedirected`        (Set when the user profile is stored outside of the regular folder.)
         - `$env:SHELL`                      (Path to the current pwsh executable. Also fixes value when inherited from a parent Unix shell.)
         - `$env:SHLVL`                      (Unix shell levels are respected correctly to handle sub-shells appropriately. The built-in
                                               prompt uses this information to indicate the number of current parent shells.

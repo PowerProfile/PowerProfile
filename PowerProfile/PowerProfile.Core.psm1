@@ -413,19 +413,20 @@ function Resolve-RealPath {
     [OutputType([string])]
     param(
         [Parameter(Position = 0, Mandatory, ValueFromPipeline, ValueFromPipelineByPropertyName)]
-        [Alias('FullName')]
         [string] $Path
     )
 
-    $Path = $Path | Resolve-Path
     if (-Not ([System.IO.File]::Exists($Path)) -and -Not ([System.IO.Directory]::Exists($Path))) {
         return $Path
     }
 
-    [string[]] $parts = ($Path.TrimStart([IO.Path]::DirectorySeparatorChar).Split([IO.Path]::DirectorySeparatorChar))
-    [string] $realPath = ''
+    $Path = Resolve-Path -Path $Path
+
+    [string[]]$parts = $Path.TrimStart([IO.Path]::DirectorySeparatorChar).Split([IO.Path]::DirectorySeparatorChar)
+    [string]$realPath = if (-Not $IsWindows) { [IO.Path]::DirectorySeparatorChar } else { '' }
+    $OldPWD = $PWD
+    $changedPath = $false
     foreach ($part in $parts) {
-        $changedPath = $false
 
         # Change to the path to allow resolving
         # relative path in link
@@ -434,18 +435,19 @@ function Resolve-RealPath {
             $changedPath = $true
         }
 
-        $realPath += [string]([IO.Path]::DirectorySeparatorChar + $part)
-        $item = Get-Item $realPath -Force
-        if ($item.Target) {
-            $realPath = $item.Target | Resolve-Path
-        }
+        $realPath = [System.IO.Path]::Combine($realPath,$part)
+        $item = Get-Item $realPath -Force -ErrorAction Ignore
 
-        if ($changedPath) {
-            Pop-Location
+        if ($null -ne $item.Target) {
+            $realPath = Resolve-RealPath -Path $item.Target
         }
     }
 
-    return $realPath
+    if ($changedPath) {
+        Push-Location $OldPWD
+    }
+
+    $realPath
 }
 
 function Get-PoProfileContent {
@@ -857,142 +859,6 @@ function pwsh {
 Set-Alias -Name pwsh-preview -Value pwsh
 #endregion
 
-#region Functions: PowerShellGet
-function Invoke-PoProfileInstallPSResource {
-    [Alias('Install-PSResource')]
-    [CmdletBinding(DefaultParameterSetName='NameParameterSet', SupportsShouldProcess=$true, ConfirmImpact='Medium', HelpUri='https://go.microsoft.com/fwlink/?LinkID=398573')]
-    param(
-        [Parameter(ParameterSetName='NameParameterSet', Mandatory=$true, Position=0, ValueFromPipelineByPropertyName=$true)]
-        [ValidateNotNullOrEmpty()]
-        [string[]]
-        ${Name},
-
-        [Parameter(ParameterSetName='InputObject', Mandatory=$true, Position=0, ValueFromPipeline=$true, ValueFromPipelineByPropertyName=$true)]
-        [ValidateNotNull()]
-        [psobject[]]
-        ${InputObject},
-
-        [Parameter(ParameterSetName='NameParameterSet', ValueFromPipelineByPropertyName=$true)]
-        [ValidateNotNull()]
-        [string]
-        ${MinimumVersion},
-
-        [Parameter(ParameterSetName='NameParameterSet', ValueFromPipelineByPropertyName=$true)]
-        [ValidateNotNull()]
-        [string]
-        ${MaximumVersion},
-
-        [Parameter(ParameterSetName='NameParameterSet', ValueFromPipelineByPropertyName=$true)]
-        [ValidateNotNull()]
-        [string]
-        ${RequiredVersion},
-
-        [Parameter(ParameterSetName='NameParameterSet')]
-        [ValidateNotNullOrEmpty()]
-        [string[]]
-        ${Repository},
-
-        [Parameter(ValueFromPipelineByPropertyName=$true)]
-        [pscredential]
-        [System.Management.Automation.CredentialAttribute()]
-        ${Credential},
-
-        [ValidateSet('CurrentUser','AllUsers')]
-        [string]
-        ${Scope},
-
-        [Parameter(ValueFromPipelineByPropertyName=$true)]
-        [ValidateNotNullOrEmpty()]
-        [uri]
-        ${Proxy},
-
-        [Parameter(ValueFromPipelineByPropertyName=$true)]
-        [pscredential]
-        [System.Management.Automation.CredentialAttribute()]
-        ${ProxyCredential},
-
-        [switch]
-        ${AllowClobber},
-
-        [switch]
-        ${SkipPublisherCheck},
-
-        [switch]
-        ${Force},
-
-        [Parameter(ParameterSetName='NameParameterSet')]
-        [switch]
-        ${AllowPrerelease},
-
-        [switch]
-        ${AcceptLicense},
-
-        [switch]
-        ${PassThru})
-
-    begin
-    {
-        try {
-            if (
-                (-Not $PSBoundParameters.ContainsKey('Scope')) -and
-                $env:IsProfileRedirected
-            ) {
-                $PSBoundParameters['Scope'] = 'AllUsers'
-            }
-
-            # Implicitly use PSGallery if there are many source repositories
-            # for the same module name
-            $PSRepos = Find-Module $PSBoundParameters['Name']
-            if (
-                (-Not $PSBoundParameters.ContainsKey('Repository')) -and
-                ($PSRepos.Count -gt 1) -and
-                ($PSRepos.Repository -contains 'PSGallery')
-            ) {
-                $PSBoundParameters['Repository'] = 'PSGallery'
-            }
-
-            $outBuffer = $null
-            if ($PSBoundParameters.TryGetValue('OutBuffer', [ref]$outBuffer))
-            {
-                $PSBoundParameters['OutBuffer'] = 1
-            }
-
-            $wrappedCmd = $ExecutionContext.InvokeCommand.GetCommand('Install-PSResource', [System.Management.Automation.CommandTypes]::Function)
-            $scriptCmd = {& $wrappedCmd @PSBoundParameters }
-
-            $steppablePipeline = $scriptCmd.GetSteppablePipeline()
-            $steppablePipeline.Begin($PSCmdlet)
-        } catch {
-            throw
-        }
-    }
-
-    process
-    {
-        try {
-            $steppablePipeline.Process($_)
-        } catch {
-            throw
-        }
-    }
-
-    end
-    {
-        try {
-            $steppablePipeline.End()
-        } catch {
-            throw
-        }
-    }
-    <#
-
-    .ForwardHelpTargetName Install-PSResource
-    .ForwardHelpCategory Function
-
-    #>
-}
-#endregion
-
 #region System Environment
 switch -Regex (@([System.Environment]::GetCommandLineArgs())) {
     '(?i)^-C(o(m(m(a(nd?)?)?)?)?)?$' {
@@ -1232,6 +1098,14 @@ if ($null -eq $env:PSLVL) {
 
         # env:PSModulePath
         $env:PSModulePath += [System.IO.Path]::PathSeparator + [System.IO.Path]::Combine($PROFILEHOME,'Modules')
+
+        $REALPROFILEHOME = Resolve-RealPath $PROFILEHOME
+        if (
+            $REALPROFILEHOME.Contains("$HOME/Library/Mobile Documents") -or
+            $REALPROFILEHOME.Contains("$HOME/Library/CloudStorage")
+        ) {
+            $env:IsProfileRedirected = $true
+        }
     }
 
     # env:TERM_PROGRAM

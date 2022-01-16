@@ -15,7 +15,9 @@ if (($PSEdition -eq 'Desktop' -or $IsWindows) -and $null -eq $PoProfileOriginScr
     Get-ChildItem -File -Recurse -FollowSymlink -Path $PSScriptRoot | ForEach-Object { Unblock-File -Path $_.FullName -ErrorAction Ignore -Confirm:$false -WhatIf:$false }
 }
 
-Import-Module -Force -DisableNameChecking -Name (Join-Path $PSScriptRoot 'PowerProfile.Core.psd1') -ErrorAction Stop
+[Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12
+
+Import-Module -Force -DisableNameChecking -Name ([System.IO.Path]::Combine($PSScriptRoot,'PowerProfile.Core.psd1')) -ErrorAction Stop
 #endregion
 
 #region Setup
@@ -67,6 +69,28 @@ if ($null -eq $PoProfileOriginScriptPath) {
         $SetupCompleted = $true
     }
 
+    #TODO can this be done later in the code using regular PoProfilePSModule installer?
+    if (-Not (Test-Path -PathType Container (Join-Path $PoProfileModulePath 'PowerProfile.Commands'))) {
+        Write-PoProfileProgress -ScriptTitle 'Installing module `PowerProfile.Commands`'
+
+        $Prerelease = (Import-PowerShellDataFile (Join-Path $PSScriptRoot 'PowerProfile.psd1')).PrivateData.PSData.Prerelease
+        if (Get-Command -Name Install-PSResource -ErrorAction Ignore) {
+            $cmd = 'Save-PSResource -Name PowerProfile.Commands -Path $PoProfileModulePath -Repository PSGallery -IncludeXML'
+            if ($null -ne $Prerelease) {
+                $cmd += ' -Prerelease'
+            }
+        } else {
+            $cmd = 'Save-Module -Name PowerProfile.Commands -Path $PoProfileModulePath -Repository PSGallery'
+            if ($null -ne $Prerelease) {
+                $cmd += ' -AllowPrerelease'
+            }
+            Set-PSRepository -Name PSGallery -InstallationPolicy Trusted
+        }
+
+        Invoke-Expression -Command $cmd
+        $SetupCompleted = $true
+    }
+
     if ($SetupCompleted) {
         Remove-Variable -Name 'SetupCompleted'
 
@@ -90,27 +114,6 @@ elseif ($PSScriptRoot -notmatch "^$([regex]::Escape($PoProfileModulePath))") {
 elseif ($PoProfileOriginScriptPath -ne $PROFILE.CurrentUserAllHosts) {
     Remove-Module -Force PowerProfile.Core -ErrorAction Ignore
     throw 'PowerProfile can not be imported into other PowerShell scripts or modules'
-}
-
-[Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12
-
-if (-Not (Get-Module -Name PowerProfile.Commands -ListAvailable)) {
-    Write-PoProfileProgress -ProfileTitle 'PowerProfile Initialization' -ScriptTitle 'Installing module `PowerProfile.Commands`'
-
-    if (Get-Command -Name Install-PSResource) {
-        $cmd = 'Install-PSResource -Name PowerProfile.Commands -Scope CurrentUser -Repository PSGallery -TrustRepository'
-        if ($null -ne (Import-PowerShellDataFile (Join-Path $PSScriptRoot 'PowerProfile.psd1')).PrivateData.PSData.Prerelease) {
-            $cmd += ' -Prerelease'
-        }
-    } else {
-        $cmd = 'Install-Module -Name PowerProfile.Commands -Scope CurrentUser -Repository PSGallery'
-        if ($null -ne (Import-PowerShellDataFile (Join-Path $PSScriptRoot 'PowerProfile.psd1')).PrivateData.PSData.Prerelease) {
-            $cmd += ' -AllowPrerelease'
-        }
-        Set-PSRepository -Name PSGallery -InstallationPolicy Trusted
-    }
-
-    Invoke-Expression -Command $cmd
 }
 
 if (
