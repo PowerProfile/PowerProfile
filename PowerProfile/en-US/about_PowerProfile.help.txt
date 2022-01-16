@@ -9,7 +9,7 @@ LONG DESCRIPTION
     capabilities of PowerShell to also support profiles for individual terminal applications.
 
 EXAMPLES
-    Installation can be done from the PowerShell Gallery as followed:
+    Installation on Windows can be done from the PowerShell Gallery as followed:
 
         PS C:\> Install-Module PowerProfile,PowerProfile.Commands -Scope CurrentUser
 
@@ -18,7 +18,7 @@ EXAMPLES
 
     Now, manually import the module once to trigger the automatic setup procedure:
 
-        PS C:\> Import-Module PowerProfile
+        PS> Import-Module PowerProfile
 
     This runs a precondition check and performs the required setup steps before loading the module. Essentially, the
     `profile.ps1` file in `$PROFILE.CurrentUserAllHosts` is generated to enable automatic load for new PowerShell sessions.
@@ -35,12 +35,19 @@ EXAMPLES
     On macOS or Linux machines, the configuration/profile files are separated from local user installed modules. This is
     great in general and something we miss A LOT on Windows (see environment varibale `$env:IsProfileRedirected` mentioned below).
 
-    As PowerProfile is an in-place upgrade of the native PowerShell profile capabilities, you will need to manually copy
-    the module from `~/.local/share/powershell/Modules/PowerProfile` to `~/.config/powershell/Modules/PowerProfile`.
-    The initial setup on macOS and Linux is slightly different as the designated module path is not part of
-    `$env:PSModulePath` (yet):
+    Because of this, the initial installation and setup on macOS and Linux is slightly different as the designated module
+    path is not part of `$env:PSModulePath` (yet):
 
-        PS ~> Import-Module ~/.config/powershell/Modules/PowerProfile
+        PS ~> $InstallPath = Join-Path (Split-Path $PROFILE) 'Modules'
+        PS ~> New-Item -ItemType Directory -Force -Path $InstallPath
+        PS ~> Save-Module -Name PowerProfile.Commands -Path $InstallPath
+        PS ~> Save-Module -Name PowerProfile -Path $InstallPath
+        PS ~> Import-Module $InstallPath/PowerProfile
+
+    Should you be using the upcoming PowerShellGet V3 already, use the `Save-PSResource` command instead of the `Save-Module`
+    command like this:
+
+        PS ~> Save-PSResource -Name PowerProfile.Commands,PowerProfile -IncludeXML -Path $InstallPath
 
     That is, until you let PowerProfile take over, of course :-)
 
@@ -64,7 +71,7 @@ EXAMPLES
                                               prompt uses this information to indicate the number of current parent shells.
                                               This functionality is also extended to Windows systems.)
         - `$env:PSLVL`                      (Similar to `$env:SHLVL` but only counts the parent PowerShell sessions. PowerProfile uses
-                                              this information internally to skip certain parts of the profile that shall only be at the
+                                              this information internally to skip certain parts of the profile that shall only be run at the
                                               beginning of the first PowerShell session.)
         - `$env:TERM_PROGRAM`               (Set if the variable was not set by the terminal application)
         - `$env:PSHOST_PROGRAM`             (Reformated `$PROFILE.CurrentUserCurrentHost` that PowerProfile uses internally to represent the
@@ -91,7 +98,7 @@ EXAMPLES
     Obviously PowerProfile uses these variables internally to control what parts of the user profile shall be loaded in which situations.
     You can observe the variables in your current session like this:
 
-        PS C:\> Get-Variable | Where-Object -Property ModuleName -match '^PowerProfile' | Select-Object Name,Value,ModuleName
+        PS> Get-Variable | Where-Object -Property ModuleName -eq 'PowerProfile.Core' | Select-Object Name,Value,ModuleName
 
     How to begin using PowerProfile?
     ================================
@@ -101,7 +108,7 @@ EXAMPLES
     To create initial directories for you to put your startup script(s), let the `New-PowerProfile` command create the structure
     for your current machine, including the terminal application you are currently using:
 
-        PS C:\> New-PowerProfile
+        PS> New-PowerProfile
             Creating profile directories in: $HOME\Documents\PowerShell
 
             🗂  Profile
@@ -121,7 +128,7 @@ EXAMPLES
 
     Repeat the `New-PowerProfile` command but with parameters this time:
 
-        PS C:\> New-PowerProfile -AllConditionalDirectories
+        PS> New-PowerProfile -AllConditionalDirectories
             Creating profile directories in: $HOME\Documents\PowerShell
 
             🗂  Profile
@@ -167,7 +174,7 @@ EXAMPLES
     what parts of your profile shall be loaded.
     Using a directory structure instead of a single profile file with complex nested if-elseif-then statements is a huge benefit in terms
     of transparency, portability, and maintainability.
-    If you are done filling up the profiles directories with content, you may use the `Optimize-PowerProfile` command to cleanup and directories
+    If you are done filling up the profiles directories with content, you may use the `Optimize-PowerProfile` command to cleanup directories
     that are not in use and therefore empty. Think of it as the natural opponent to the `New-PowerProfile` command.
 
     How does PowerProfile handle profile directories internally?
@@ -182,7 +189,7 @@ EXAMPLES
     Indeed, PowerProfile on the fly generates up to three dynamic PowerShell modules. We can actually see this from the list of loaded
     modules, indicated by the prefix `PowerProfile-Dyn`:
 
-            PS C:\> Get-Module PowerProfile* | Select-Object -Property Name
+            PS> Get-Module PowerProfile* | Select-Object -Property Name
 
             Name
             ----
@@ -195,7 +202,12 @@ EXAMPLES
             PowerProfile.Core.Load
 
     As you can see from the output, there are three dynamic script modules named `PowerProfile-Dyn.Scripts*`.
-    But wait, there is a forth dynamic module, what's that? This leads us to the second meaning of "power" in PowerProfile:
+    They "own" any variables that you created/used in your custom scripts:
+
+            PS> Get-Variable | Where-Object -Property ModuleName -match '^PowerProfile-Dyn\..+' | Select-Object Name,Value,ModuleName
+
+    But wait, there is a forth dynamic module `PowerProfile-Dyn.Functions`, what's that?
+    This leads us to the second meaning of "power" in PowerProfile:
 
     2. Functional folders
     ---------------------
@@ -215,14 +227,15 @@ EXAMPLES
     PowerShell session.
 
     `Functions` folders are mostly self-explanatory: Save your `.ps1` function files that you require in your profile scripts or during your
-    interactive terminal session (in case you don't want to write an entire PS module). You may follow the best practice to use a single
-    file per function, but generally that's up to you.
-    Functions are loaded into a single dynamic PS module before any other profile scripts run. You can list all your custom functions like this:
+    interactive terminal session (in case you don't want to write an entire PS module). You can (and should) follow best practices to use a
+    single file per function, but generally that's up to you. Functions can have aliases set either inline by using the `[Alias()]` attribute,
+    or separate with the `Set-Alias` command.
+    Functions and aliases are loaded into a single dynamic PS module before any other profile scripts run. You can list the module content
+    like this:
 
-        PS> Get-Command -Type Function -Module PowerProfile-Dyn*
+        PS> Get-Command -Type All -Module PowerProfile-Dyn.Functions
 
-    The `Config` folder contains optional configuration files for PowerProfile. You may add them here manually or use the `*-PoProfileConfig`
-    commands instead.
+    The `Config` folder contains optional configuration files for PowerProfile.
     You can also create sub-folders for any 3rd-party configurations and use the `Get-PoProfileContent` command in your scripts to retrieve a
     list of config files that PowerProfile detected:
 
