@@ -76,7 +76,6 @@ FunctionsToExport = @(
     'Get-PoProfileProfilesList'
     'Get-PoProfileState'
     'Get-PoProfileSubDirs'
-    'Invoke-PoProfileInstallPSResource'
     'pwsh'
     'Remove-PoProfileState'
     'Reset-PoProfileState'
@@ -94,7 +93,6 @@ CmdletsToExport = @()
 
 # Aliases to export from this module, for best performance, do not use wildcards and do not delete the entry, use an empty array if there are no aliases to export.
 AliasesToExport = @(
-    'Install-PSResource'
     'pwsh-preview'
 )
 

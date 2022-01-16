@@ -1153,6 +1153,9 @@ if ($null -eq $env:PSLVL) {
 Get-PoProfileContent
 
 $Exports = @{
+    Alias = @(
+        'pwsh-preview'
+    )
     Variable = @(
         'IsCommand'
         'IsLogin'
