@@ -59,6 +59,7 @@ EXAMPLES
                                               Windows. PowerProfile provides a proxy `Install-Module` command that will make
                                               use of this information to avoid OneDrive sync issues by keeping the PowerShell profile
                                               as little as possible.)
+        - `$env:SHELL`                      (Path to the current pwsh executable. Also fixes value when inherited from a parent Unix shell.)
         - `$env:SHLVL`                      (Unix shell levels are respected correctly to handle sub-shells appropriately. The built-in
                                               prompt uses this information to indicate the number of current parent shells.
                                               This functionality is also extended to Windows systems.)
@@ -90,7 +91,7 @@ EXAMPLES
     Obviously PowerProfile uses these variables internally to control what parts of the user profile shall be loaded in which situations.
     You can observe the variables in your current session like this:
 
-        PS C:\> Get-Variable | Where-Object -Property ModuleName -match '^PowerProfile' | Select-Object Name,ModuleName
+        PS C:\> Get-Variable | Where-Object -Property ModuleName -match '^PowerProfile' | Select-Object Name,Value,ModuleName
 
     How to begin using PowerProfile?
     ================================
@@ -128,7 +129,10 @@ EXAMPLES
             ├──💻 _Machine_DESKTOP-XYZ
             ├──💾 _Platform_Windows
             │   └──🏢 _Arch_AMD64
-            └──🐚 _PSEdition_Core
+            ├──🐚 _PSEdition_Core
+            │   ├──🏢 _Arch_AMD64
+            │   └──💻 _Machine_DESKTOP-XYZ
+            └──🐚 _PSEdition_Desktop
                 ├──🏢 _Arch_AMD64
                 └──💻 _Machine_DESKTOP-XYZ
 
@@ -137,7 +141,10 @@ EXAMPLES
             ├──💻 _Machine_DESKTOP-XYZ
             ├──💾 _Platform_Windows
             │   └──🏢 _Arch_AMD64
-            └──🐚 _PSEdition_Core
+            ├──🐚 _PSEdition_Core
+            │   ├──🏢 _Arch_AMD64
+            │   └──💻 _Machine_DESKTOP-XYZ
+            └──🐚 _PSEdition_Desktop
                 ├──🏢 _Arch_AMD64
                 └──💻 _Machine_DESKTOP-XYZ
 
@@ -146,7 +153,10 @@ EXAMPLES
             ├──💻 _Machine_DESKTOP-XYZ
             ├──💾 _Platform_Windows
             │   └──🏢 _Arch_AMD64
-            └──🐚 _PSEdition_Core
+            ├──🐚 _PSEdition_Core
+            │   ├──🏢 _Arch_AMD64
+            │   └──💻 _Machine_DESKTOP-XYZ
+            └──🐚 _PSEdition_Desktop
                 ├──🏢 _Arch_AMD64
                 └──💻 _Machine_DESKTOP-XYZ
 
@@ -207,7 +217,9 @@ EXAMPLES
     `Functions` folders are mostly self-explanatory: Save your `.ps1` function files that you require in your profile scripts or during your
     interactive terminal session (in case you don't want to write an entire PS module). You may follow the best practice to use a single
     file per function, but generally that's up to you.
-    Functions are loaded into a single dynamic PS module before any other profile scripts run.
+    Functions are loaded into a single dynamic PS module before any other profile scripts run. You can list all your custom functions like this:
+
+        PS> Get-Command -Type Function -Module PowerProfile-Dyn*
 
     The `Config` folder contains optional configuration files for PowerProfile. You may add them here manually or use the `*-PoProfileConfig`
     commands instead.
