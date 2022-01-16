@@ -321,7 +321,7 @@ function Get-PoProfileSubDirs {
         if ($Architecture) {$ArchDirectory}
         if ($Machine) {$MachineDirectory}
         if ($Platform) {
-            if ($IsCoreCLR -or ($Name -notmatch '^Profile_.*')) {
+            if (($PSEdition -eq 'Core') -or ($Name -notmatch '^Profile_.*')) {
                 if (-Not $IsWindows) {
                     '_Platform_NonWindows'
                     if ($Architecture) {[System.IO.Path]::Combine('_Platform_NonWindows',$ArchDirectory)}
@@ -330,7 +330,7 @@ function Get-PoProfileSubDirs {
                 if ($Architecture) {[System.IO.Path]::Combine($PlatformDirectory,$ArchDirectory)}
             }
         }
-        if ($IsCoreCLR) {
+        if ($PSEdition -eq 'Core') {
             if (($PSEditions -eq 'All') -or ($PSEditions -eq 'Core')) {
                 '_PSEdition_Core'
                 if ($Architecture) {[System.IO.Path]::Combine('_PSEdition_Core',$ArchDirectory)}
@@ -542,7 +542,7 @@ function Find-PoProfileContent {
 
         # User Profiles
         foreach ($PoPr in $Profiles) {
-            $SubDirs = @('') + @(Get-PoProfileSubDirs -Name (Split-Path -Leaf $PoPr) -PSEditions $(if ($IsCoreCLR) {'Core'} else {'Desktop'}))
+            $SubDirs = @('') + @(Get-PoProfileSubDirs -Name (Split-Path -Leaf $PoPr) -PSEditions $PSEdition)
 
             foreach ($SubDir in $SubDirs) {
                 $p = [System.IO.Path]::Combine($Directory,$PoPr,$SubDir)
@@ -1018,10 +1018,10 @@ $PROFILEHOME = Split-Path $PROFILE
 $env:PSHOST_PROGRAM  = (Split-Path -Leaf $PROFILE.CurrentUserCurrentHost).Replace('Microsoft.','') -replace '_profile\.[^.]*$',''
 $env:LC_PSHOST = $(
     if ($env:PSHOST_PROGRAM -eq 'PowerShell') {
-        if ($IsCoreCLR) {
-            'PowerShell'
-        } else {
+        if ($PSEdition -eq 'Desktop') {
             'Windows PowerShell'
+        } else {
+            'PowerShell'
         }
     } else {
         (($env:PSHOST_PROGRAM -replace '(?-i)([a-z]{3,})([A-Z])','$1 $2') -replace '_',' ').Trim()
@@ -1030,7 +1030,7 @@ $env:LC_PSHOST = $(
 
 if ($null -eq $env:PSLVL) {
     if ($IsWindows) {
-        $PSType = if ($IsCoreCLR) { 'PowerShell' } else { 'WindowsPowerShell' }
+        $PSType = if ($PSEdition -eq 'Desktop') { 'WindowsPowerShell' } else { 'PowerShell' }
         $PSMyDocumentsPath = [System.IO.Path]::Combine(([System.Environment]::GetFolderPath('MyDocuments')),$PSType)
         # $PSProgramFilesPath = [System.IO.Path]::Combine(([System.Environment]::GetFolderPath('ProgramFiles')),$PSType)
 
