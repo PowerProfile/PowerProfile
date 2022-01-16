@@ -1,12 +1,9 @@
 #Requires -Version 5.1
-
 if ($PSVersionTable.PSVersion.Major -eq 6) {
     throw 'PowerProfile requires PowerShell Core version 7.0 or higher'
 }
 
-Import-Module -Force -DisableNameChecking -Name (Join-Path $PSScriptRoot 'PowerProfile.Core.psd1') -ErrorAction Stop
-
-#region Setup
+#region Preparation
 $PoProfileOriginScriptPath = (Get-PSCallStack)[1].InvocationInfo.MyCommand.Path      # [...]\Documents\PowerShell\profile.ps1
 if ($PoProfileOriginScriptPath) {
     $PoProfileModulePath = [System.IO.Path]::Combine(                                # [...]\Documents\PowerShell\Modules
@@ -14,6 +11,14 @@ if ($PoProfileOriginScriptPath) {
                     'Modules'
                 )
 }
+if (($PSEdition -eq 'Desktop' -or $IsWindows) -and $null -eq $PoProfileOriginScriptPath) {
+    Get-ChildItem -File -Recurse -FollowSymlink -Path $PSScriptRoot | ForEach-Object { Unblock-File -Path $_.FullName -ErrorAction Ignore -Confirm:$false -WhatIf:$false }
+}
+
+Import-Module -Force -DisableNameChecking -Name (Join-Path $PSScriptRoot 'PowerProfile.Core.psd1') -ErrorAction Stop
+#endregion
+
+#region Setup
 if ($null -eq $PoProfileOriginScriptPath) {
     Write-PoProfileProgress -ProfileTitle "`nPowerProfile Initialization"
 
