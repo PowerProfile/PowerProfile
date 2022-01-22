@@ -512,12 +512,12 @@ function Find-PoProfileContent {
     )
 
     [PSCustomObject]$return = @{
-        Profiles = @{}
-        Config = @{}
-        PoProfileConfig = @{}
-        Functions = [ordered]@{}
-        Modules = @()
-        Scripts = @()
+        Profiles   = @{}
+        Config     = @{}
+        ConfigDirs = @{}
+        Functions  = [ordered]@{}
+        Modules    = @()
+        Scripts    = @()
     }
     $keys = @('Config','Functions','Modules','Scripts')
 
@@ -567,32 +567,32 @@ function Find-PoProfileContent {
 
                                 Config {
 
-                                    # Top directory for PowerProfile specific config only
+                                    # Top directory for single config files
                                     [string[]]$files = [System.IO.Directory]::EnumerateFiles($p,'*','TopDirectoryOnly')
                                     [array]::Sort($files)
                                     foreach ($file in $files) {
                                         $Node = Split-Path -Leaf $file
-                                        if( $null -eq $return.'PoProfileConfig'.$PoPr ) {
-                                            $return.'PoProfileConfig'.$PoPr = [ordered]@{}
+                                        if( $null -eq $return.$key.$PoPr ) {
+                                            $return.$key.$PoPr = [ordered]@{}
                                         }
-                                        $return.'PoProfileConfig'.$PoPr.$Node = $file
+                                        $return.$key.$PoPr.$Node = $file
                                     }
 
-                                    # Sub directories for 3rd-party configuration assets
+                                    # Sub directories for multi-file configuration assets
                                     [string[]]$dirs = [System.IO.Directory]::EnumerateDirectories($p,'*','TopDirectoryOnly')
                                     foreach ($dir in $dirs) {
                                         $Node = Split-Path -Leaf $dir
-                                        if( $null -eq $return.$key.$PoPr ) {
-                                            $return.$key.$PoPr = @{}
+                                        if( $null -eq $return.'ConfigDirs'.$PoPr ) {
+                                            $return.'ConfigDirs'.$PoPr = @{}
                                         }
                                         [string[]]$files = [System.IO.Directory]::EnumerateFiles($dir,'*','TopDirectoryOnly')
                                         [array]::Sort($files)
                                         foreach ($file in $files) {
                                             $fNode = Split-Path -Leaf $file
-                                            if( $null -eq $return.$key.$PoPr.$Node ) {
-                                                $return.$key.$PoPr.$Node = [ordered]@{}
+                                            if( $null -eq $return.'ConfigDirs'.$PoPr.$Node ) {
+                                                $return.'ConfigDirs'.$PoPr.$Node = [ordered]@{}
                                             }
-                                            $return.$key.$PoPr.$Node.$fNode = $file
+                                            $return.'ConfigDirs'.$PoPr.$Node.$fNode = $file
                                         }
                                     }
 

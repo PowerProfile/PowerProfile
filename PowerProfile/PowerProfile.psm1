@@ -29,16 +29,6 @@ if ($null -eq $env:PSLVL) {
 
 #region Profiles
 function Initialize-Profiles {
-    if (Get-PoProfileState 'PowerProfile.Profiles') {
-        $ProfilesState = Get-PoProfileState 'PowerProfile.Profiles'
-    } else {
-        $ProfilesState = @{ State = 'Incomplete' }
-    }
-    $ProfilesState.LastUpdate = Get-Date
-    if ($null -ne $ProfilesState.Exceptions) {
-        $ProfilesState.Exceptions = $null
-    }
-
     Write-PoProfileProgress -ProfileTitle 'Loading profile'
 
     #region User functions
@@ -88,49 +78,119 @@ function Initialize-Profiles {
 
             foreach ($key in (Get-PoProfileContent).Profiles.$($PoProfileTmpThisProfile).keys) {
 
-                $ScriptProperties = $null
+                $hidden = $false
+                $output = $false
+                $run = $true
+                $setup = $false
 
                 if ($key -match '^([0-9]{4,})?((?:\.\w+)+)?-?([\w ]+)((?:\.\w+)+)?\.(\w+)$') {
                     if ($null -ne $Matches[1]) {
-                        $ScriptOrderNumber = $Matches[1]
+                        [decimal]$ScriptSortingNumber = $Matches[1]
                     }
                     if ($null -ne $Matches[2]) {
                         $ScriptProviderDetails = $Matches[2].Substring(1).Split('.')
                     }
                     $PoProfileSciptName = $Matches[3] -replace '_',' '
                     if ($null -ne $Matches[4]) {
-                        $ScriptProperties = $Matches[4].Substring(1).Split('.')
-                        if (
-                            (
-                                $ScriptProperties -contains 'IsProfileSetup' -and
-                                (
-                                    $null -eq (Get-PoProfileState 'PSPackageManagement') -or
-                                    ((Get-PoProfileState('PSPackageManagement')).State -eq 'Complete')
-                                ) -and
-                                (
-                                    ((Get-PoProfileState('PowerProfile.Profiles')).State -eq 'Complete') -or
-                                    ($null -ne $env:PSLVL)
-                                )
-                            ) -or
-                            ($null -ne $env:PSLVL -and $ScriptProperties -contains 'IsNotPSLVL') -or
-                            ($null -eq $env:PSLVL -and $ScriptProperties -contains 'IsPSLVL') -or
-                            ($IsNonInteractive -and $ScriptProperties -contains 'IsInteractive')
-                        ) {
-                            continue
-                        }
-                        elseif (
-                            ($env:IsElevated -and $ScriptProperties -contains 'IsNotElevated') -or
-                            (-Not $env:IsElevated -and $ScriptProperties -contains 'IsElevated') -or
-                            ($IsCommand -and -not $IsNoExit -and $ScriptProperties -contains 'IsNoCommand') -or
-                            (-Not $IsCommand -and $ScriptProperties -contains 'IsCommand') -or
-                            ($IsLogin -and $ScriptProperties -contains 'IsNoLogin') -or
-                            (-Not $IsLogin -and $ScriptProperties -contains 'IsLogin') -or
-                            (-Not $IsNonInteractive -and $ScriptProperties -contains 'IsNonInteractive')
-                        ) {
-                            if ($ScriptProperties -notcontains 'IsHidden') {
-                                Write-PoProfileProgress -ScriptTitle ($PSStyle.Foreground.Yellow + $PSStyle.BoldOff + '[Skipped] ' + $PSStyle.Foreground.White + $PoProfileSciptName) -NoCounter
+
+                        switch ($Matches[4].Substring(1).Split('.')) {
+
+                            Hidden {
+                                $hidden = $true
                             }
-                            continue
+
+                            Output {
+                                $output = $true
+                            }
+
+                            Setup {
+                                if (
+                                    $IsNonInteractive -or
+                                    $IsCommand -or
+                                    $null -ne $env:PSLVL
+                                ) {
+                                    $run = $false
+                                    break
+                                }
+                                $setup = $true
+                            }
+
+                            Interactive {
+                                if (
+                                    $IsNonInteractive -or
+                                    $null -ne $env:PSLVL -or
+                                    (
+                                        $IsCommand -and
+                                        $null -eq $IsNoExit
+                                        )
+                                ) {
+                                    $run = $false
+                                    break
+                                }
+                            }
+
+                            NonInteractive {
+                                if (
+                                    -Not $IsNonInteractive -or
+                                    $null -ne $env:PSLVL
+                                ) {
+                                    $run = $false
+                                    break
+                                }
+                            }
+
+                            Command {
+                                if (-Not $IsCommand) {
+                                    $run = $false
+                                    break
+                                }
+                            }
+
+                            NoCommand {
+                                if ($IsCommand) {
+                                    $run = $false
+                                    break
+                                }
+                            }
+
+                            CommandNoExit {
+                                if (
+                                    -Not $IsCommand -or
+                                    -Not $IsNoExit
+                                ) {
+                                    $run = $false
+                                    break
+                                }
+                            }
+
+                            Login {
+                                if (-Not $IsLogin) {
+                                    $run = $false
+                                }
+                            }
+
+                            NoLogin {
+                                if ($IsLogin) {
+                                    $run = $false
+                                }
+                            }
+
+                            Elevated {
+                                if ($null -eq $env:IsElevated) {
+                                    $run = $false
+                                }
+                            }
+
+                            NotElevated {
+                                if ($null -ne $env:IsElevated) {
+                                    $run = $false
+                                }
+                            }
+
+                            Default {
+                                Write-Error "${key}: Unknown script name property $_"
+                            }
+
                         }
                     }
                 } else {
@@ -138,22 +198,34 @@ function Initialize-Profiles {
                     continue
                 }
 
-                if ($ScriptProperties -notcontains 'IsHidden') {
+                if (-Not $run) {
+                    if (-Not $hidden) {
+                        Write-PoProfileProgress -ScriptTitle ($PSStyle.Foreground.Yellow + $PSStyle.BoldOff + '[Skipped] ' + $PSStyle.Foreground.White + $PoProfileSciptName) -NoCounter
+                    }
+                    Continue
+                }
+
+                if (-Not $hidden) {
                     Write-PoProfileProgress -ScriptTitle $PoProfileSciptName
                 }
 
                 try {
-                    if ($ScriptIsHidden) {
-                        $null = . (Get-PoProfileContent).Profiles.$($PoProfileTmpThisProfile).$key
-                    } else {
+                    if ($output) {
+                        Write-Host "$key with output,  setup: $setup"
                         . (Get-PoProfileContent).Profiles.$($PoProfileTmpThisProfile).$key
+                    } else {
+                        Write-Host "$key w/o output,  setup: $setup"
+                        $null = . (Get-PoProfileContent).Profiles.$($PoProfileTmpThisProfile).$key
                     }
                 }
                 catch {
-                    if ($ScriptIsHidden) {
-                        Write-PoProfileProgress -ScriptTitle $PoProfileSciptName
+                    if (-Not $output) {
+                        Write-Host "$key ERROR"
+                        if ($hidden) {
+                            Write-PoProfileProgress -ScriptTitle $PoProfileSciptName
+                        }
+                        Write-PoProfileProgress -ScriptTitle @(($_.Exception.Message).Trim() -split [System.Environment]::NewLine) -ScriptTitleType Error
                     }
-                    Write-PoProfileProgress -ScriptTitle @(($_.Exception.Message).Trim() -split [System.Environment]::NewLine) -ScriptTitleType Error
                 }
             }
         } | Import-Module -Global -DisableNameChecking
@@ -161,15 +233,6 @@ function Initialize-Profiles {
         $ProfileId++
     }
     #endregion
-
-    if ($null -eq $env:PSLVL) {
-        if ($null -eq $ProfilesState.Exceptions) {
-            $ProfilesState.State = 'Complete'
-        } elseif ($ProfilesState.State -eq 'Incomplete') {
-            $ProfilesState.State = 'Error'
-        }
-        Set-PoProfileState 'PowerProfile.Profiles' $ProfilesState
-    }
 }
 
 # Load narrow profile
