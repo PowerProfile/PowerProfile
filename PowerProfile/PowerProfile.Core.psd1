@@ -79,6 +79,7 @@ FunctionsToExport = @(
     'pwsh'
     'Remove-PoProfileState'
     'Reset-PoProfileState'
+    'Save-PoProfileState'
     'Resolve-RealPath'
     'Set-PoProfileState'
     'Write-PoProfileItemProgress'

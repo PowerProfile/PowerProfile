@@ -70,10 +70,10 @@ if ($null -eq $PSStyle) {
     Add-Member @Parameters
 }
 
-$Script:PoProfileUChar = @{
+$Script:PoProfileChar = @{
     GeneralPunctuation = @{
-        HorizontalEllipsis    = [char]0x2026
-        DoubleExclamationMark = [char]0x203C
+        horizontal_ellipsis    = [char]0x2026
+        double_exclamation_mark = [char]0x203C
     }
 }
 
@@ -133,34 +133,10 @@ function Set-PoProfileState {
         $PoProfileState.PSObject.Properties.Remove($Name)
     }
     elseif ($null -eq $PoProfileState.PSObject.Properties.Item($Name)) {
-        $PoProfileState | Add-Member -MemberType NoteProperty -Name $Name -Value $Value
+        Add-Member -InputObject $PoProfileState -MemberType NoteProperty -Name $Name -Value $Value
     }
     else {
         $PoProfileState.$Name = $Value
-    }
-
-    $p = [System.IO.Path]::Combine(
-        $env:XDG_STATE_HOME,
-        $(
-            if ($IsWindows) {
-                'PowerShell'
-            } else {
-                'powershell'
-            }
-        ),
-        'Modules',
-        'PowerProfile',
-        'PowerProfile.state.json'
-    )
-
-    if (($PoProfileState.PSObject.Properties).Count -gt 0) {
-        $baseDir = Split-Path -Path $p
-        if (-Not ([System.IO.Directory]::Exists($baseDir))) {
-            $null = New-Item -Type Container -Force $baseDir -ErrorAction Stop
-        }
-        ConvertTo-Json $PoProfileState -Compress | Set-Content -Path $p -Encoding ASCII
-    } elseif ([System.IO.File]::Exists($p)) {
-        Remove-Item -Path $p -ErrorAction Ignore
     }
 }
 
@@ -206,18 +182,44 @@ function Get-PoProfileState {
         if ([System.IO.File]::Exists($p)) {
             $Script:PoProfileState = [System.IO.File]::ReadAllText($p) | ConvertFrom-Json -ErrorAction Ignore
         } else {
-            [PSCustomObject]$Script:PoProfileState = $null
+            [PSCustomObject]$Script:PoProfileState = @{}
         }
     }
 
     if ($Name) {
-        if ($PoProfileState.$Name) {
+        if ($null -ne $PoProfileState.PSObject.Properties.Item($Name)) {
             return $PoProfileState.$Name
         } else {
-            return $null
+            return @{}
         }
     } else {
         return $PoProfileState
+    }
+}
+
+function Save-PoProfileState {
+    $p = [System.IO.Path]::Combine(
+        $env:XDG_STATE_HOME,
+        $(
+            if ($IsWindows) {
+                'PowerShell'
+            } else {
+                'powershell'
+            }
+        ),
+        'Modules',
+        'PowerProfile',
+        'PowerProfile.state.json'
+    )
+
+    if (($PoProfileState.PSObject.Properties).Count -gt 0) {
+        $baseDir = Split-Path -Path $p
+        if (-Not ([System.IO.Directory]::Exists($baseDir))) {
+            $null = New-Item -Type Container -Force $baseDir -ErrorAction Stop
+        }
+        ConvertTo-Json $PoProfileState -Compress | Set-Content -Path $p -Encoding ASCII
+    } elseif ([System.IO.File]::Exists($p)) {
+        Remove-Item -Path $p -ErrorAction Ignore
     }
 }
 
@@ -289,7 +291,7 @@ function Reset-PoProfileState {
         if ($Force -or $PSCmdlet.ShouldProcess($p)) {
             Remove-Item -Path $p -ErrorAction Ignore -Confirm:$false
             Remove-Variable -Scope Script -Name PoProfileState -ErrorAction Ignore -Confirm:$false
-            New-Variable -Scope Script -Name PoProfileState -Value [PSCustomObject]@{}
+            [PSCustomObject]$Script:PoProfileState = @{}
         }
     }
 }
@@ -655,7 +657,7 @@ function Write-PoProfileItemProgress {
         [Int]$Depth
     )
 
-    if ($IsCommand -or $IsNonInteractive -or ($null -ne $env:PSLVL)) {
+    if ($IsCommand -or $IsNonInteractive -or ($null -ne $env:PSLVL) -or ($null -ne $PSDebugContext)) {
         return
     }
 
@@ -750,7 +752,7 @@ function Write-PoProfileProgress {
         [switch]$NoCounter
     )
 
-    if ($IsCommand -or $IsNonInteractive -or ($null -ne $env:PSLVL)) {
+    if ($IsCommand -or $IsNonInteractive -or ($null -ne $env:PSLVL) -or ($null -ne $PSDebugContext)) {
         return
     }
 
@@ -1168,7 +1170,7 @@ $Exports = @{
         'PROFILEHOME'
         'PSStyle'
         'PoProfileEmoji'
-        'PoProfileUChar'
+        'PoProfileChar'
     )
 }
 Export-ModuleMember @Exports
