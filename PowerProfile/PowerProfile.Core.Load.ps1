@@ -5,13 +5,13 @@ if ($PSVersionTable.PSVersion.Major -eq 6) {
 
 #region Preparation
 $PoProfileOriginScriptPath = (Get-PSCallStack)[1].InvocationInfo.MyCommand.Path      # [...]\Documents\PowerShell\profile.ps1
-if ($PoProfileOriginScriptPath) {
+if ($null -ne $PoProfileOriginScriptPath) {
     $PoProfileModulePath = [System.IO.Path]::Combine(                                # [...]\Documents\PowerShell\Modules
                     (Split-Path $PoProfileOriginScriptPath),
                     'Modules'
                 )
 }
-if (($PSEdition -eq 'Desktop' -or $IsWindows) -and $null -eq $PoProfileOriginScriptPath) {
+elseif ($PSEdition -eq 'Desktop' -or $IsWindows) {
     Get-ChildItem -File -Recurse -FollowSymlink -Path $PSScriptRoot | ForEach-Object { Unblock-File -Path $_.FullName -ErrorAction Ignore -Confirm:$false -WhatIf:$false }
 }
 

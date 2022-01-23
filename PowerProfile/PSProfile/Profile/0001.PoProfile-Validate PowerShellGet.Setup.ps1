@@ -1,7 +1,7 @@
 Remove-Module PowerShellGet -Force -ErrorAction Ignore
 Remove-Module PackageManagement -Force -ErrorAction Ignore
 
-$Cfg = Import-PowerShellDataFile -Path ((Get-PoProfileContent).Config.Profile.'PoProfile-PSPowerShellGet.psd1')
+$Cfg = Import-PowerShellDataFile -Path ((Get-PoProfileContent).Config.Profile.'PoProfile-PSPowerShellGet.config.psd1')
 $InstalledPSGetVersion = (Get-Module -ListAvailable -Name PowerShellGet).Version | Where-Object -Property Major -eq 3 | Sort-Object -Property Major,Minor,Build | Select-Object -Last 1
 
 if ($IsWindows -and $null -eq $env:IsElevated) {

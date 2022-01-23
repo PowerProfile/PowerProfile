@@ -13,7 +13,7 @@ if ((Get-PSRepository -Name PSGallery -ErrorAction Ignore).InstallationPolicy -e
     Set-PSRepository -Name PSGallery -InstallationPolicy Trusted
 }
 
-$Cfg = Import-PowerShellDataFile -Path ((Get-PoProfileContent).Config.Profile.'PoProfile-PSPackageManagement.psd1')
+$Cfg = Import-PowerShellDataFile -Path ((Get-PoProfileContent).Config.Profile.'PoProfile-PSPackageManagement.config.psd1')
 $InstalledPSGallery = Get-PSRepository -Name PSGallery -ErrorAction Ignore -WarningAction Ignore 2>$null
 $InstalledNuGetVersion = (Get-PackageProvider -ListAvailable -Name NuGet).Version
 $InstalledPMVersion = (Get-Module -ListAvailable -Name PackageManagement).Version

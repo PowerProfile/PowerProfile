@@ -180,7 +180,7 @@ function Get-PoProfileState {
 
     if (-Not (Get-Variable -Scope Script -Name 'PoProfileState' -ErrorAction Ignore)) {
         if ([System.IO.File]::Exists($p)) {
-            $Script:PoProfileState = [System.IO.File]::ReadAllText($p) | ConvertFrom-Json -ErrorAction Ignore
+            $Script:PoProfileState = ConvertFrom-Json -InputObject ([System.IO.File]::ReadAllText($p)) -NoEnumerate -Depth 100 -ErrorAction Ignore
         } else {
             [PSCustomObject]$Script:PoProfileState = @{}
         }
@@ -217,7 +217,7 @@ function Save-PoProfileState {
         if (-Not ([System.IO.Directory]::Exists($baseDir))) {
             $null = New-Item -Type Container -Force $baseDir -ErrorAction Stop
         }
-        ConvertTo-Json $PoProfileState -Compress | Set-Content -Path $p -Encoding ASCII
+        ConvertTo-Json $PoProfileState -Compress -Depth 100 | Set-Content -Path $p -Encoding ASCII
     } elseif ([System.IO.File]::Exists($p)) {
         Remove-Item -Path $p -ErrorAction Ignore
     }
@@ -471,7 +471,7 @@ function Get-PoProfileContent {
                     }
                 )
                 $(
-                    foreach ($d in @(Get-Module -ListAvailable -Name ([System.IO.Path]::Combine($PROFILEHOME,'Modules','PowerProfile.*.*')))) {
+                    foreach ($d in @(Get-Module -ListAvailable -Name ([System.IO.Path]::Combine($PROFILEHOME,'Modules','PowerProfile.*')))) {
                         $p = [System.IO.Path]::Combine(
                             (Split-Path $d.Path),
                             'PSProfile'

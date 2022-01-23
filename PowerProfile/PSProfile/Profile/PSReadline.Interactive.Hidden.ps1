@@ -1,4 +1,4 @@
-$CfgPath = (Get-PoProfileContent).Config.$CurrentProfile.'UnixCompleters.config.psd1'
+$CfgPath = (Get-PoProfileContent).Config.$CurrentProfile.'PSReadline.config.psd1'
 if ($CfgPath) {
     $Cfg = Import-PowerShellDataFile -Path $CfgPath
 

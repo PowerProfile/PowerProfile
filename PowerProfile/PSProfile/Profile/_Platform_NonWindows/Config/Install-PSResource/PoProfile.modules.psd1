@@ -1,5 +1,0 @@
-@{
-    PSModules = @(
-        'Microsoft.PowerShell.UnixCompleters'
-    )
-}

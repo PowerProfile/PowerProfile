@@ -4,6 +4,9 @@
 $ExecutionContext.SessionState.Module.OnRemove = {
     function Global:prompt {
         "PS $($executionContext.SessionState.Path.CurrentLocation)$('>' * ($nestedPromptLevel + 1)) ";
+        # .Link
+        # https://go.microsoft.com/fwlink/?LinkID=225750
+        # .ExternalHelp System.Management.Automation.dll-help.xml
     }
     Remove-Module -Force -Name PowerProfile-Dyn.* -ErrorAction Ignore
     Remove-Module -Force -Name PowerProfile.Core.Load -ErrorAction Ignore
@@ -53,9 +56,9 @@ function Initialize-Profiles {
 
                             Setup {
                                 if (
-                                    $IsNonInteractive -or
                                     $IsCommand -or
                                     $null -ne $env:PSLVL -or
+                                    $IsNonInteractive -or
                                     $null -ne $PSDebugContext
                                 ) {
                                     continue FunctionNames
@@ -127,6 +130,7 @@ function Initialize-Profiles {
 
                             Default {
                                 Write-PoProfileItemProgress -ItemTextColor $PSStyle.Foreground.Magenta -Depth 1 -ItemText (($FunctionFullName -replace '\.[^.]*$','') + '?')
+                                continue FunctionNames
                             }
 
                         }
@@ -212,9 +216,9 @@ function Initialize-Profiles {
 
                             Setup {
                                 if (
-                                    $IsNonInteractive -or
                                     $IsCommand -or
                                     $null -ne $env:PSLVL -or
+                                    $IsNonInteractive -or
                                     $null -ne $PSDebugContext
                                 ) {
                                     continue ScriptNames
@@ -294,15 +298,13 @@ function Initialize-Profiles {
 
                 if ($ScriptIsSetup) {
                     if ($null -eq $SetupState.$ScriptFullName) {
-                        $SetupState.$ScriptFullName = @{
+                        Add-Member -InputObject $SetupState -MemberType NoteProperty -Name $ScriptFullName -Value @{
                             ErrorMessage = @()
                             State = 'Incomplete'
                         }
-                    }
-
-                    if (
-                        $SetupState.$ScriptFullName.State -eq 'Complete'
-                    ) {
+                    } elseif($SetupState.$ScriptFullName.State -ne 'Complete') {
+                        $SetupState.$ScriptFullName.ErrorMessage = @()
+                    } else {
                         continue ScriptNames
                     }
                 }
