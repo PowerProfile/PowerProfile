@@ -5,7 +5,7 @@ if ((Get-ExecutionPolicy) -notmatch '(?i)^Bypass|Unrestricted|RemoteSigned$') {
 
 if ((Get-Module -ListAvailable -Name PowerShellGet).Version | Where-Object -Property Major -eq 3) {
     $SetupState.$ScriptFullName.State = 'Complete'
-    continue
+    continue ScriptNames
 }
 
 if ((Get-PSRepository -Name PSGallery -ErrorAction Ignore).InstallationPolicy -eq 'Untrusted' ) {
@@ -27,11 +27,12 @@ if ($IsWindows -and $null -eq $env:IsElevated) {
         ($InstalledPSGetVersion -lt $($Cfg.PowerShellGetV2.MinimumVersion -replace '-[\w_.]+$'))
     ) {
         Write-PoProfileProgress -ScriptTitleType Error -ScriptTitle 'Outdated PowerShell remote module installation capability detected.','Start an elevated PowerShell session for an automated fix.'
-        continue
+        $SetupState.$ScriptFullName.State = 'PendingElevation'
+        continue ScriptNames
     } else {
         Write-PoProfileProgress -ScriptTitleType Confirmation -ScriptTitle 'System is up-to-date.'
         $SetupState.$ScriptFullName.State = 'Complete'
-        continue
+        continue ScriptNames
     }
 }
 
@@ -102,9 +103,7 @@ elseif (-Not $IsWindows -or ($IsWindows -and $null -ne $env:IsElevated)) {
         }
     }
 
-    if ($SetupState.$ScriptFullName.State -eq 'Error') {
-        Write-PoProfileProgress -ScriptTitleType Error -ScriptTitle 'This setup step did not succeed.',('Run '+$PSStyle.Italic+'`Get-PoProfileState "PowerProfile.PSPackageManagement"`'+$PSStyle.ItalicOff+' for further details`')
-    } else {
+    if ($SetupState.$ScriptFullName.State -ne 'Error') {
         if (-Not $MadeChanges) {
             Write-PoProfileProgress -ScriptTitleType Confirmation -ScriptTitle 'System is up-to-date.'
         }

@@ -1,3 +1,8 @@
+if ($SetupState.'0001.PoProfile-Validate PowerShell Package Management.Setup.ps1'.State -ne 'Complete') {
+    $SetupState.$ScriptFullName.State = 'PendingPackageManagementSetup'
+    Continue ScriptNames
+}
+
 Remove-Module PowerShellGet -Force -ErrorAction Ignore
 Remove-Module PackageManagement -Force -ErrorAction Ignore
 
@@ -9,7 +14,8 @@ if ($IsWindows -and $null -eq $env:IsElevated) {
         ($InstalledPSGetVersion -lt $($Cfg.PowerShellGet.Version -replace '-[\w_.]+$'))
     ) {
         Write-PoProfileProgress -ScriptTitleType Error -ScriptTitle 'Outdated PowerShellGet version detected.','Start an elevated PowerShell session for an automated fix.'
-        continue
+        $SetupState.$ScriptFullName.State = 'PendingElevation'
+        continue ScriptNames
     } else {
         Write-PoProfileProgress -ScriptTitleType Confirmation -ScriptTitle 'PowerShellGet is up-to-date.'
         $SetupState.$ScriptFullName.State = 'Complete'
@@ -75,9 +81,7 @@ elseif (-Not $IsWindows -or ($IsWindows -and $null -ne $env:IsElevated)) {
         }
     }
 
-    if ($SetupState.$ScriptFullName.State -eq 'Error') {
-        Write-PoProfileProgress -ScriptTitleType Error -ScriptTitle 'This setup step did not succeed.',('Run '+$PSStyle.Italic+'`Get-PoProfileState "PowerProfile.PowerShellGet"`'+$PSStyle.ItalicOff+' for further details`')
-    } else {
+    if ($SetupState.$ScriptFullName.State -ne 'Error') {
         if (-Not $MadeChanges) {
             Write-PoProfileProgress -ScriptTitleType Confirmation -ScriptTitle 'PowerShellGet is up-to-date.'
         }

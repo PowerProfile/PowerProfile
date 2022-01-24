@@ -28,6 +28,10 @@ if ($null -eq $env:PSLVL) {
         }
     }
 }
+
+if ($null -ne $executionContext.SessionState.Module.PrivateData.PSData.Prerelease) {
+    $Global:PoProfilePrerelease = $true
+}
 #endregion
 
 #region Profiles
@@ -60,6 +64,15 @@ function Initialize-Profiles {
                                     $null -ne $env:PSLVL -or
                                     $IsNonInteractive -or
                                     $null -ne $PSDebugContext
+                                ) {
+                                    continue FunctionNames
+                                }
+
+                                # Do not run any setup with root privileges
+                                #   to avoid file permission hickups on *Unix
+                                if (
+                                    -Not $IsWindows -and
+                                    $null -ne $env:IsElevated
                                 ) {
                                     continue FunctionNames
                                 }
@@ -223,6 +236,16 @@ function Initialize-Profiles {
                                 ) {
                                     continue ScriptNames
                                 }
+
+                                # Do not run any setup with root privileges
+                                #   to avoid file permission hickups on *Unix
+                                if (
+                                    -Not $IsWindows -and
+                                    $null -ne $env:IsElevated
+                                ) {
+                                    continue ScriptNames
+                                }
+
                                 $ScriptIsSetup = $true
                             }
 
@@ -304,6 +327,7 @@ function Initialize-Profiles {
                         }
                     } elseif($SetupState.$ScriptFullName.State -ne 'Complete') {
                         $SetupState.$ScriptFullName.ErrorMessage = @()
+                        $SetupState.$ScriptFullName.State = 'Incomplete'
                     } else {
                         continue ScriptNames
                     }

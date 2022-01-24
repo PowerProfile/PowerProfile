@@ -3,7 +3,7 @@ if ($SetupState.'0001.PoProfile-Validate PowerShell Package Management.Setup.ps1
     Continue ScriptNames
 }
 
-$Files = (Get-PoProfileContent).ConfigDirs.$CurrentProfile.'Install-Module'
+$Files = (Get-PoProfileContent).ConfigDirs.$CurrentProfile.'Install-Script'
 
 if ($null -eq $Files) {
     $SetupState.$ScriptFullName.State = 'Complete'
@@ -16,7 +16,7 @@ Remove-Module CompatPowerShellGet -Force -ErrorAction Ignore
 Import-Module -Name PowerShellGet -MaximumVersion 2.*
 
 foreach ($File in $Files.GetEnumerator()) {
-    if ($File.Name -match '\.PSModule\.(json|psd1)$') {
+    if ($File.Name -match '\.PSScript\.(json|psd1)$') {
         if ($Matches[1] -eq 'json') {
             $FData = ConvertFrom-Json -InputObject ([System.IO.File]::ReadAllText($File.Value)) -AsHashtable
         } else {
@@ -26,21 +26,21 @@ foreach ($File in $Files.GetEnumerator()) {
         continue
     }
 
-    foreach ($Module in $FData.GetEnumerator()) {
-        if ($Module.Value -is [string]) {
-            if ($Module.Value -eq '*') {
+    foreach ($Script in $FData.GetEnumerator()) {
+        if ($Script.Value -is [string]) {
+            if ($Script.Value -eq '*') {
                 $Params = @{}
-            } elseif ($Module.Value -eq '*-*') {
+            } elseif ($Script.Value -eq '*-*') {
                 $Params = @{
                     AllowPrerelease = $true
                 }
             } else {
                 $Params = @{
-                    MinimumVersion = $Module.Value
+                    MinimumVersion = $Script.Value
                 }
             }
         } else {
-            $Params = $Module.Value
+            $Params = $Script.Value
         }
 
         if (
@@ -57,33 +57,22 @@ foreach ($File in $Files.GetEnumerator()) {
             (
                 $Params.MinimumVersion -match '-' -or
                 $Params.MaximumVersion -match '-' -or
-                $Params.RequiredVersion -match '-' -or
-                (
-                    $Module.Name -eq 'PowerProfile.Commands' -and
-                    $PoProfilePrerelease
-                )
+                $Params.RequiredVersion -match '-'
             )
         ) {
             $Params.AllowPrerelease = $true
         }
 
-        # take over default behaviour from PowerShellGetV3
-        if ($null -eq $Params.AllowClobber) {
-            $Params.AllowClobber = $true
-        }
-
-        # Prioritize PSGallery / lazy substitute for priority
-        #  setting from PowerShellGetV3
         if ($null -eq $Params.Repository) {
             $Params.Repository = 'PSGallery'
         }
 
         try {
-            Write-Host "      $($Module.Name)"
-            Install-Module @Params -Name $Module.Name -WarningAction Ignore -ErrorAction Stop -Confirm:$false -WhatIf:$false
+            Write-Host "      $($Script.Name)"
+            Install-Script @Params -Name $Script.Name -WarningAction Ignore -ErrorAction Stop -Confirm:$false -WhatIf:$false
         }
         catch {
-            $SetupState.$ScriptFullName.ErrorMessage += "$($Module.Name): $_"
+            $SetupState.$ScriptFullName.ErrorMessage += "$($Script.Name): $_"
             $SetupState.$ScriptFullName.State = 'Error'
         }
     }

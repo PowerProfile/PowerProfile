@@ -1,3 +1,8 @@
+if ($SetupState.'0001.PoProfile-Validate PowerShellGet.Setup.ps1'.State -ne 'Complete') {
+    $SetupState.$ScriptFullName.State = 'PendingPowerShellGetV3'
+    Continue ScriptNames
+}
+
 $Files = (Get-PoProfileContent).ConfigDirs.$CurrentProfile.'Install-PSResource'
 
 if ($null -eq $Files) {
@@ -30,8 +35,23 @@ foreach ($File in $Files.GetEnumerator()) {
         }
 
         if (
+            $Params.Scope -eq 'AllUsers' -and
+            $IsWindows -and
+            $null -eq $env:IsElevated
+        ) {
+            $SetupState.$ScriptFullName.State = 'PendingElevation'
+            continue
+        }
+
+        if (
             $null -eq $Params.Prerelease -and
-            $Params.Version -match '-'
+            (
+                $Params.Version -match '-' -or
+                (
+                    $Module.Name -eq 'PowerProfile.Commands' -and
+                    $PoProfilePrerelease
+                )
+            )
         ) {
             $Params.Prerelease = $true
         }

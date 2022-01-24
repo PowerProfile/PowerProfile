@@ -1,0 +1,3 @@
+@{
+    'PowerProfile.Commands' = '*'
+}

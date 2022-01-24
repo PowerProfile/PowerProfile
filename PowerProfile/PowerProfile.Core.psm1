@@ -6,60 +6,60 @@ if ($null -eq $PSStyle) {
     # Lazy support for PSStyle for PS version <7.2.0
     $e = [char]27
     $Script:PSStyle = [PSCustomObject]@{
-        Reset = "$e[0m"
-        BlinkOff = "$e[25m"
-        Blink = "$e[5m"
-        BoldOff = "$e[22m"
-        Bold = "$e[1m"
-        HiddenOff = "$e[28m"
-        Hidden = "$e[8m"
-        ReverseOff = "$e[27m"
-        Reverse = "$e[7m"
-        ItalicOff = "$e[23m"
-        Italic = "$e[3m"
-        UnderlineOff = "$e[24m"
-        Underline = "$e[4m"
-        StrikethroughOff = "$e[29m"
-        Strikethrough = "$e[9m"
+        Reset               = "$e[0m"
+        BlinkOff            = "$e[25m"
+        Blink               = "$e[5m"
+        BoldOff             = "$e[22m"
+        Bold                = "$e[1m"
+        HiddenOff           = "$e[28m"
+        Hidden              = "$e[8m"
+        ReverseOff          = "$e[27m"
+        Reverse             = "$e[7m"
+        ItalicOff           = "$e[23m"
+        Italic              = "$e[3m"
+        UnderlineOff        = "$e[24m"
+        Underline           = "$e[4m"
+        StrikethroughOff    = "$e[29m"
+        Strikethrough       = "$e[9m"
         Foreground = @{
-            Black = "$e[30m"
-            Red = "$e[31m"
-            Green = "$e[32m"
-            Yellow = "$e[33m"
-            Blue = "$e[34m"
-            Magenta = "$e[35m"
-            Cyan = "$e[36m"
-            White = "$e[37m"
-            BrightBlack = "$e[90m"
-            BrightRed = "$e[91m"
-            BrightGreen = "$e[92m"
-            BrightYellow = "$e[93m"
-            BrightBlue = "$e[94m"
-            BrightMagenta = "$e[95m"
-            BrightCyan = "$e[96m"
-            BrightWhite = "$e[97m"
+            Black           = "$e[30m"
+            Red             = "$e[31m"
+            Green           = "$e[32m"
+            Yellow          = "$e[33m"
+            Blue            = "$e[34m"
+            Magenta         = "$e[35m"
+            Cyan            = "$e[36m"
+            White           = "$e[37m"
+            BrightBlack     = "$e[90m"
+            BrightRed       = "$e[91m"
+            BrightGreen     = "$e[92m"
+            BrightYellow    = "$e[93m"
+            BrightBlue      = "$e[94m"
+            BrightMagenta   = "$e[95m"
+            BrightCyan      = "$e[96m"
+            BrightWhite     = "$e[97m"
         }
         Background = @{
-            Black = "$e[40m"
-            Red = "$e[41m"
-            Green = "$e[42m"
-            Yellow = "$e[43m"
-            Blue = "$e[44m"
-            Magenta = "$e[45m"
-            Cyan = "$e[46m"
-            White = "$e[47m"
-            BrightBlack = "$e[100m"
-            BrightRed = "$e[101m"
-            BrightGreen = "$e[102m"
-            BrightYellow = "$e[103m"
-            BrightBlue = "$e[104m"
-            BrightMagenta = "$e[105m"
-            BrightCyan = "$e[106m"
-            BrightWhite = "$e[107m"
+            Black           = "$e[40m"
+            Red             = "$e[41m"
+            Green           = "$e[42m"
+            Yellow          = "$e[43m"
+            Blue            = "$e[44m"
+            Magenta         = "$e[45m"
+            Cyan            = "$e[46m"
+            White           = "$e[47m"
+            BrightBlack     = "$e[100m"
+            BrightRed       = "$e[101m"
+            BrightGreen     = "$e[102m"
+            BrightYellow    = "$e[103m"
+            BrightBlue      = "$e[104m"
+            BrightMagenta   = "$e[105m"
+            BrightCyan      = "$e[106m"
+            BrightWhite     = "$e[107m"
         }
     }
 
-    $Parameters = @{
+    $Params = @{
         MemberType = 'ScriptMethod'
         InputObject = $PSStyle
         Name = 'FormatHyperlink'
@@ -67,19 +67,19 @@ if ($null -eq $PSStyle) {
             return $("$e]8;;"+$args[1]+"$e\"+$args[0]+"$e]8;;$e\")
         }
     }
-    Add-Member @Parameters
+    Add-Member @Params
 }
 
 $Script:PoProfileChar = @{
     GeneralPunctuation = @{
-        horizontal_ellipsis    = [char]0x2026
+        horizontal_ellipsis     = [char]0x2026
         double_exclamation_mark = [char]0x203C
     }
 }
 
 $Script:PoProfileEmoji = @{
     Symbols = @{
-        white_check_mark = [char]0x2705
+        white_check_mark        = [char]0x2705
     }
 }
 #endregion
@@ -198,6 +198,12 @@ function Get-PoProfileState {
 }
 
 function Save-PoProfileState {
+    # do not write permanent state as root to avoid
+    #   file permission hickups on *Unix
+    if (-Not $IsWindows -and $null -ne $env:IsElevated) {
+        return
+    }
+
     $p = [System.IO.Path]::Combine(
         $env:XDG_STATE_HOME,
         $(
@@ -462,7 +468,7 @@ function Get-PoProfileContent {
     [OutputType([PSCustomObject])]
     Param()
     if ($null -eq $Script:PoProfileContent) {
-        $Parameters = @{
+        $Params = @{
             Directories = @(
                 $(
                     $p = [System.IO.Path]::Combine($PSScriptRoot,'PSProfile')
@@ -485,7 +491,7 @@ function Get-PoProfileContent {
             )
             Profiles = @(Get-PoProfileProfilesList)
         }
-        $Script:PoProfileContent = Find-PoProfileContent @Parameters
+        $Script:PoProfileContent = Find-PoProfileContent @Params
     }
     $PoProfileContent
 }
@@ -870,76 +876,76 @@ Set-Alias -Name pwsh-preview -Value pwsh
 #region System Environment
 switch -Regex (@([System.Environment]::GetCommandLineArgs())) {
     '(?i)^-C(o(m(m(a(nd?)?)?)?)?)?$' {
-        $Parameters = @{
+        $Params = @{
             Scope = 'Script'
             Name = 'IsCommand'
             Value = $true
             Option = 'ReadOnly'
             Description = 'PowerShell was started with command line argument -Command'
         }
-        Set-Variable @Parameters
+        Set-Variable @Params
         continue
     }
     '(?i)^-L(o(g(in?)?)?)?$' {
-        $Parameters = @{
+        $Params = @{
             Scope = 'Script'
             Name = 'IsLogin'
             Value = $true
             Option = 'ReadOnly'
             Description = 'PowerShell was started as a login shell'
         }
-        Set-Variable @Parameters
+        Set-Variable @Params
         continue
     }
     '(?i)^-NoE(x(it?)?)?$' {
-        $Parameters = @{
+        $Params = @{
             Scope = 'Script'
             Name = 'IsNoExit'
             Value = $true
             Option = 'ReadOnly'
             Description = 'PowerShell was started with command line argument -NoExit'
         }
-        Set-Variable @Parameters
+        Set-Variable @Params
         continue
     }
     '(?i)^-NonI(n(t(e(r(a(c(t(i(ve?)?)?)?)?)?)?)?)?)?$' {
-        $Parameters = @{
+        $Params = @{
             Scope = 'Script'
             Name = 'IsNonInteractive'
             Value = $true
             Option = 'ReadOnly'
             Description = 'PowerShell was explicitly started in non-interactive mode'
         }
-        Set-Variable @Parameters
+        Set-Variable @Params
         continue
     }
 }
 if ($null -eq $IsCommand) {
-    $Parameters = @{
+    $Params = @{
         Scope = 'Script'
         Name = 'IsCommand'
         Value = $false
         Option = 'ReadOnly'
     }
-    Set-Variable @Parameters
+    Set-Variable @Params
 }
 if ($null -eq $IsLogin) {
-    $Parameters = @{
+    $Params = @{
         Scope = 'Script'
         Name = 'IsLogin'
         Value = $false
         Option = 'ReadOnly'
     }
-    Set-Variable @Parameters
+    Set-Variable @Params
 }
 if ($null -eq $IsNoExit) {
-    $Parameters = @{
+    $Params = @{
         Scope = 'Script'
         Name = 'IsNoExit'
         Value = $false
         Option = 'ReadOnly'
     }
-    Set-Variable @Parameters
+    Set-Variable @Params
 }
 if ($null -eq $IsNonInteractive) {
     if ($null -eq [System.Environment]::UserInteractive) {
@@ -947,48 +953,48 @@ if ($null -eq $IsNonInteractive) {
     } else {
         $v = $false
     }
-    $Parameters = @{
+    $Params = @{
         Scope = 'Script'
         Name = 'IsNonInteractive'
         Value = $v
         Option = 'ReadOnly'
     }
-    Set-Variable @Parameters
+    Set-Variable @Params
 }
 
 # Cross-platform compatibility for Windows PowerShell
 if ($PSEdition -eq 'Desktop') {
-    $Parameters = @{
+    $Params = @{
         Scope = 'Script'
         Name = 'IsCoreCLR'
         Value = $false
         Option = 'ReadOnly'
     }
-    Set-Variable @Parameters
+    Set-Variable @Params
 
-    $Parameters = @{
+    $Params = @{
         Scope = 'Script'
         Name = 'IsLinux'
         Value = $false
         Option = 'ReadOnly'
     }
-    Set-Variable @Parameters
+    Set-Variable @Params
 
-    $Parameters = @{
+    $Params = @{
         Scope = 'Script'
         Name = 'IsMacOS'
         Value = $false
         Option = 'ReadOnly'
     }
-    Set-Variable @Parameters
+    Set-Variable @Params
 
-    $Parameters = @{
+    $Params = @{
         Scope = 'Script'
         Name = 'IsWindows'
         Value = $true
         Option = 'ReadOnly'
     }
-    Set-Variable @Parameters
+    Set-Variable @Params
 }
 
 # env:SHLVL + env:PSLVL
