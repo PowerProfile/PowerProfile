@@ -1,7 +1,17 @@
-if ($SetupState.'0001.PoProfile-Validate PowerShellGet.Setup.ps1'.State -ne 'Complete') {
-    $SetupState.$ScriptFullName.State = 'PendingPowerShellGetV3'
+if (
+    (
+        $CurrentProfile -eq 'Profile' -and
+        $SetupState.'0001.PoProfile-Validate PowerShellGet.Setup.ps1'.State -ne 'Complete'
+    ) -or
+    (
+        $CurrentProfile -ne 'Profile' -and
+        (Get-PoProfileState 'PoProfile.Setup.Profile').'0001.PoProfile-Validate PowerShellGet.Setup.ps1'.State -ne 'Complete'
+    )
+) {
+    $SetupState.$ScriptFullName.State = 'PendingPackageManagementSetup'
     Continue ScriptNames
 }
+
 
 $Files = (Get-PoProfileContent).ConfigDirs.$CurrentProfile.'Install-PSResource'
 

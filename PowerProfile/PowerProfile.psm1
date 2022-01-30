@@ -201,7 +201,7 @@ function Initialize-Profiles {
             $CurrentProfile = Get-PoProfileState 'CurrentProfile'
             $SetupState = Get-PoProfileState ('PoProfile.Setup.'+$CurrentProfile)
 
-            :ScriptNames foreach ($ScriptFullName in (Get-PoProfileContent).Profiles.$CurrentProfile.keys) {
+            :ScriptNames foreach ($ScriptFullName in ((Get-PoProfileContent).Profiles.$CurrentProfile.keys | Sort-Object)) {
 
                 $ScriptIsHidden = $false
                 $ScriptHasOutput = $false
@@ -323,6 +323,7 @@ function Initialize-Profiles {
                     if ($null -eq $SetupState.$ScriptFullName) {
                         Add-Member -InputObject $SetupState -MemberType NoteProperty -Name $ScriptFullName -Value @{
                             ErrorMessage = @()
+                            LastUpdate = $null
                             State = 'Incomplete'
                         }
                     } elseif($SetupState.$ScriptFullName.State -ne 'Complete') {

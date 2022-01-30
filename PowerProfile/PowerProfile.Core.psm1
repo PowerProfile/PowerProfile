@@ -520,7 +520,7 @@ function Find-PoProfileContent {
         Profiles   = @{}
         Config     = @{}
         ConfigDirs = @{}
-        Functions  = [ordered]@{}
+        Functions  = @{}
         Modules    = @()
         Scripts    = @()
     }
@@ -547,91 +547,93 @@ function Find-PoProfileContent {
 
         # User Profiles
         foreach ($PoPr in $Profiles) {
-            $SubDirs = @('') + @(Get-PoProfileSubDirs -Name (Split-Path -Leaf $PoPr) -PSEditions $PSEdition)
+            foreach ($PoPrDir in @('EveryProfile',$PoPr)) {
+                $SubDirs = @('') + @(Get-PoProfileSubDirs -Name (Split-Path -Leaf $PoPrDir) -PSEditions $PSEdition)
 
-            foreach ($SubDir in $SubDirs) {
-                $p = [System.IO.Path]::Combine($Directory,$PoPr,$SubDir)
-                if ([System.IO.Directory]::Exists($p)) {
-                    [string[]]$files = [System.IO.Directory]::EnumerateFiles($p,'*.ps1','TopDirectoryOnly')
-                    [array]::Sort($files)
-                    foreach ($file in $files) {
-                        if ($file -match '\.Test\.ps1$') {
-                            continue
+                foreach ($SubDir in $SubDirs) {
+                    $p = [System.IO.Path]::Combine($Directory,$PoPrDir,$SubDir)
+                    if ([System.IO.Directory]::Exists($p)) {
+                        [string[]]$files = [System.IO.Directory]::EnumerateFiles($p,'*.ps1','TopDirectoryOnly')
+                        [array]::Sort($files)
+                        foreach ($file in $files) {
+                            if ($file -match '\.Test\.ps1$') {
+                                continue
+                            }
+                            if( $null -eq $return.Profiles.$PoPr ) {
+                                $return.Profiles.$PoPr = @{}
+                            }
+                            $Node = Split-Path -Leaf $file
+                            $return.Profiles.$PoPr.$Node = $file
                         }
-                        if( $null -eq $return.Profiles.$PoPr ) {
-                            $return.Profiles.$PoPr = [ordered]@{}
-                        }
-                        $Node = Split-Path -Leaf $file
-                        $return.Profiles.$PoPr.$Node = $file
-                    }
 
-                    foreach ($key in $keys) {
-                        $p = [System.IO.Path]::Combine($Directory,$PoPr,$SubDir,$key)
-                        if ([System.IO.Directory]::Exists($p)) {
-                            switch -Exact ($key) {
+                        foreach ($key in $keys) {
+                            $p = [System.IO.Path]::Combine($Directory,$PoPrDir,$SubDir,$key)
+                            if ([System.IO.Directory]::Exists($p)) {
+                                switch -Exact ($key) {
 
-                                Config {
+                                    Config {
 
-                                    # Top directory for single config files
-                                    [string[]]$files = [System.IO.Directory]::EnumerateFiles($p,'*','TopDirectoryOnly')
-                                    [array]::Sort($files)
-                                    foreach ($file in $files) {
-                                        $Node = Split-Path -Leaf $file
-                                        if( $null -eq $return.$key.$PoPr ) {
-                                            $return.$key.$PoPr = [ordered]@{}
-                                        }
-                                        $return.$key.$PoPr.$Node = $file
-                                    }
-
-                                    # Sub directories for multi-file configuration assets
-                                    [string[]]$dirs = [System.IO.Directory]::EnumerateDirectories($p,'*','TopDirectoryOnly')
-                                    foreach ($dir in $dirs) {
-                                        $Node = Split-Path -Leaf $dir
-                                        if( $null -eq $return.'ConfigDirs'.$PoPr ) {
-                                            $return.'ConfigDirs'.$PoPr = @{}
-                                        }
-                                        [string[]]$files = [System.IO.Directory]::EnumerateFiles($dir,'*','TopDirectoryOnly')
+                                        # Top directory for single config files
+                                        [string[]]$files = [System.IO.Directory]::EnumerateFiles($p,'*','TopDirectoryOnly')
                                         [array]::Sort($files)
                                         foreach ($file in $files) {
-                                            $fNode = Split-Path -Leaf $file
-                                            if( $null -eq $return.'ConfigDirs'.$PoPr.$Node ) {
-                                                $return.'ConfigDirs'.$PoPr.$Node = [ordered]@{}
+                                            $Node = Split-Path -Leaf $file
+                                            if( $null -eq $return.$key.$PoPr ) {
+                                                $return.$key.$PoPr = @{}
                                             }
-                                            $return.'ConfigDirs'.$PoPr.$Node.$fNode = $file
+                                            $return.$key.$PoPr.$Node = $file
                                         }
-                                    }
 
-                                    Break
-                                }
-
-                                Functions {
-                                    [string[]]$files = [System.IO.Directory]::EnumerateFiles($p,'*.ps1','AllDirectories')
-                                    [array]::Sort($files)
-                                    foreach ($file in $files) {
-                                        if ($file -match '\.Test\.ps1$') {
-                                            continue
+                                        # Sub directories for multi-file configuration assets
+                                        [string[]]$dirs = [System.IO.Directory]::EnumerateDirectories($p,'*','TopDirectoryOnly')
+                                        foreach ($dir in $dirs) {
+                                            $Node = Split-Path -Leaf $dir
+                                            if( $null -eq $return.'ConfigDirs'.$PoPr ) {
+                                                $return.'ConfigDirs'.$PoPr = @{}
+                                            }
+                                            [string[]]$files = [System.IO.Directory]::EnumerateFiles($dir,'*','TopDirectoryOnly')
+                                            [array]::Sort($files)
+                                            foreach ($file in $files) {
+                                                $fNode = Split-Path -Leaf $file
+                                                if( $null -eq $return.'ConfigDirs'.$PoPr.$Node ) {
+                                                    $return.'ConfigDirs'.$PoPr.$Node = @{}
+                                                }
+                                                $return.'ConfigDirs'.$PoPr.$Node.$fNode = $file
+                                            }
                                         }
-                                        $Node = Split-Path -Leaf $file
-                                        $return.$key.$Node = $file
+
+                                        Break
                                     }
 
-                                    Break
-                                }
+                                    Functions {
+                                        [string[]]$files = [System.IO.Directory]::EnumerateFiles($p,'*.ps1','AllDirectories')
+                                        [array]::Sort($files)
+                                        foreach ($file in $files) {
+                                            if ($file -match '\.Test\.ps1$') {
+                                                continue
+                                            }
+                                            $Node = Split-Path -Leaf $file
+                                            $return.$key.$Node = $file
+                                        }
 
-                                Modules {
-                                    if (@([System.IO.Directory]::EnumerateDirectories($p,'*','TopDirectoryOnly')).Count -gt 0) {
-                                        $return.$key += $p
+                                        Break
                                     }
 
-                                    Break
-                                }
+                                    Modules {
+                                        if (@([System.IO.Directory]::EnumerateDirectories($p,'*','TopDirectoryOnly')).Count -gt 0) {
+                                            $return.$key += $p
+                                        }
 
-                                Scripts {
-                                    if (@([System.IO.Directory]::EnumerateFiles($p,'*.ps1','TopDirectoryOnly')).Count -gt 0) {
-                                        $return.$key += $p
+                                        Break
                                     }
 
-                                    Break
+                                    Scripts {
+                                        if (@([System.IO.Directory]::EnumerateFiles($p,'*.ps1','TopDirectoryOnly')).Count -gt 0) {
+                                            $return.$key += $p
+                                        }
+
+                                        Break
+                                    }
                                 }
                             }
                         }
