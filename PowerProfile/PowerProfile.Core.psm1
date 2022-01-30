@@ -173,7 +173,6 @@ function Get-PoProfileState {
                 'powershell'
             }
         ),
-        'Modules',
         'PowerProfile',
         'PowerProfile.state.json'
     )
@@ -190,7 +189,7 @@ function Get-PoProfileState {
         if ($null -ne $PoProfileState.PSObject.Properties.Item($Name)) {
             return $PoProfileState.$Name
         } else {
-            return @{}
+            return [PSCustomObject]@{}
         }
     } else {
         return $PoProfileState
@@ -213,7 +212,6 @@ function Save-PoProfileState {
                 'powershell'
             }
         ),
-        'Modules',
         'PowerProfile',
         'PowerProfile.state.json'
     )
@@ -288,7 +286,6 @@ function Reset-PoProfileState {
                 'powershell'
             }
         ),
-        'Modules',
         'PowerProfile',
         'PowerProfile.state.json'
     )
