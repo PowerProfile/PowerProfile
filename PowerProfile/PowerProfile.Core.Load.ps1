@@ -4,9 +4,7 @@ if ($PSVersionTable.PSVersion.Major -eq 6) {
 }
 
 #region Preparation
-Write-PoProfileProgress -ProfileTitle "PowerProfile Initialization"
 if ((Get-ExecutionPolicy) -notmatch '(?i)^Bypass|Unrestricted|RemoteSigned$') {
-    Write-PoProfileProgress -ScriptTitle "Setting PowerShell ExecutionPolicy to 'RemoteSigned'"
     Set-ExecutionPolicy -ExecutionPolicy RemoteSigned -Scope CurrentUser -Force
 }
 
@@ -28,6 +26,8 @@ Import-Module -Force -DisableNameChecking -Name ([System.IO.Path]::Combine($PSSc
 
 #region Setup
 if ($null -eq $PoProfileOriginScriptPath) {
+    Write-PoProfileProgress -ProfileTitle "`nPowerProfile Initialization"
+
     $PoProfileModulePath = Join-Path (Split-Path $PROFILE.CurrentUserAllHosts) 'Modules'
     $datetime = (Get-Date).ToString('yyyy-MM-dd_HHmmss')
 
