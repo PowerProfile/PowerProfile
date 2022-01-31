@@ -4,6 +4,11 @@ if ($null -eq $Settings) {
     continue ScriptNames
 }
 
+$Exports = @{
+    Alias = @()
+    Variable = @()
+}
+
 foreach ($File in $Settings.GetEnumerator()) {
     if ($File.Name -match '\.Settings\.(json|psd1)$') {
         if ($Matches[1] -eq 'json') {
@@ -44,6 +49,32 @@ foreach ($File in $Settings.GetEnumerator()) {
         }
     }
 
+    if ($null -ne $Cfg.Variables) {
+        foreach ($Var in $Cfg.Variables.GetEnumerator()) {
+            if ($Var.Value -is [string]) {
+                $Params = @{
+                    Scope = 'Script'
+                    Name = $Var.Name
+                    Value = $Var.Value
+                    Description = 'Configuration set by ' + $File.Value
+                }
+                Set-Variable @Params
+                $Exports.Variable += $Var.Name
+            } elseif ($Var.Value -is [Hashtable]) {
+                $Params = $Var.Value
+                $Params.Scope = 'Script'
+                $Params.Name = $Var.Name
+                if ($null -eq $Params.Description) {
+                    $Params.Description = 'Configuration set by ' + $File.Value
+                }
+                if ($null -ne $Params.Value) {
+                    Set-Variable @Params
+                    $Exports.Variable += $Params.Name
+                }
+            }
+        }
+    }
+
     if ($null -ne $Cfg.EnvironmentVariables) {
         foreach ($EnvVar in $Cfg.EnvironmentVariables.GetEnumerator()) {
             try {
@@ -51,6 +82,32 @@ foreach ($File in $Settings.GetEnumerator()) {
             }
             catch {
 
+            }
+        }
+    }
+
+    if ($null -ne $Cfg.Aliases) {
+        foreach ($Alias in $Cfg.Aliases.GetEnumerator()) {
+            if ($Alias.Value -is [string]) {
+                $Params = @{
+                    Scope = 'Script'
+                    Name = $Alias.Name
+                    Value = $Alias.Value
+                    Description = 'Alias set by ' + $File.Value
+                }
+                Set-Alias @Params
+                $Exports.Alias += $Alias.Name
+            } elseif ($Alias.Value -is [Hashtable]) {
+                $Params = $Alias.Value
+                $Params.Scope = 'Script'
+                $Params.Name = $Alias.Name
+                if ($null -eq $Params.Description) {
+                    $Params.Description = 'Alias set by ' + $File.Value
+                }
+                if ($null -ne $Params.Value) {
+                    Set-Alias @Params
+                    $Exports.Alias += $Params.Name
+                }
             }
         }
     }
@@ -92,3 +149,5 @@ foreach ($File in $Settings.GetEnumerator()) {
         }
     }
 }
+
+Export-ModuleMember @Exports
