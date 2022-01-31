@@ -1,8 +1,3 @@
-if ((Get-ExecutionPolicy) -notmatch '(?i)^Bypass|Unrestricted|RemoteSigned$') {
-    Write-PoProfileProgress -ScriptTitle "Setting PowerShell ExecutionPolicy to 'RemoteSigned'"
-    Set-ExecutionPolicy -ExecutionPolicy RemoteSigned -Scope CurrentUser -Force
-}
-
 if ((Get-Module -ListAvailable -Name PowerShellGet).Version | Where-Object -Property Major -eq 3) {
     $SetupState.$ScriptFullName.State = 'Complete'
     continue ScriptNames
