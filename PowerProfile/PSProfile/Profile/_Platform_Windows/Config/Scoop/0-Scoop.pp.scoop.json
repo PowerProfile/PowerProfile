@@ -1,0 +1,17 @@
+{
+  "Buckets" :
+  [
+    {
+      "Apps" :
+      [
+        {
+          "Name" : "git"
+        }
+      ],
+      "BucketDetails" :
+      {
+        "Name" : "main"
+      }
+    }
+  ]
+}

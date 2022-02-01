@@ -11,10 +11,15 @@ $Exports = @{
 
 foreach ($File in $Settings.GetEnumerator()) {
     if ($File.Name -match '\.Settings\.(json|psd1)$') {
-        if ($Matches[1] -eq 'json') {
-            $Cfg = ConvertFrom-Json -InputObject ([System.IO.File]::ReadAllText($File.Value)) -AsHashtable
-        } else {
-            $Cfg = Import-PowerShellDataFile -Path $File.Value
+        try {
+            if ($Matches[1] -eq 'json') {
+                $Cfg = ConvertFrom-Json -InputObject ([System.IO.File]::ReadAllText($File.Value)) -AsHashtable
+            } else {
+                $Cfg = Import-PowerShellDataFile -Path $File.Value
+            }
+        }
+        catch {
+            continue
         }
     } else {
         continue
