@@ -397,3 +397,5 @@ if(-Not $IsCommand -or $IsNoExit) {
     Write-PoProfileProgress -ProfileTitle 'INITIALIZATION COMPLETE' # just to get newline in case we had output before
 }
 #endregion
+
+$env:PSExecutionPolicyPreference = $null

@@ -14,7 +14,7 @@
 .gitignore      text
 *.terminal      text
 Brewfile        text
-*.Brewfile        text
+*.Brewfile      text
 
 # Documents
 *.bibtex   text diff=bibtex

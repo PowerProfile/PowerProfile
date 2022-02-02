@@ -1,13 +1,10 @@
 #Requires -Version 5.1
 if ($PSVersionTable.PSVersion.Major -eq 6) {
+    $env:PSExecutionPolicyPreference = $null
     throw 'PowerProfile requires PowerShell Core version 7.0 or higher'
 }
 
 #region Preparation
-if ((Get-ExecutionPolicy) -notmatch '(?i)^Bypass|Unrestricted|RemoteSigned$') {
-    Set-ExecutionPolicy -ExecutionPolicy RemoteSigned -Scope CurrentUser -Force
-}
-
 $PoProfileOriginScriptPath = (Get-PSCallStack)[1].InvocationInfo.MyCommand.Path      # [...]\Documents\PowerShell\profile.ps1
 if ($null -ne $PoProfileOriginScriptPath) {
     $PoProfileModulePath = [System.IO.Path]::Combine(                                # [...]\Documents\PowerShell\Modules
@@ -16,6 +13,7 @@ if ($null -ne $PoProfileOriginScriptPath) {
                 )
 }
 elseif ($PSEdition -eq 'Desktop' -or $IsWindows) {
+    $env:PSExecutionPolicyPreference = 'RemoteSigned'
     Get-ChildItem -File -Recurse -FollowSymlink -Path $PSScriptRoot | ForEach-Object { Unblock-File -Path $_.FullName -ErrorAction Ignore -Confirm:$false -WhatIf:$false }
 }
 
@@ -38,6 +36,7 @@ if ($null -eq $PoProfileOriginScriptPath) {
             ('Move the '+'`'+"$($PSStyle.Italic)PowerProfile$($PSStyle.ItalicOff)"+'`'+' folder '+" from $($PSStyle.FormatHyperlink('here','file://'+(Split-Path $PSScriptRoot))) to profile folder $($PSStyle.FormatHyperlink($PoProfileModulePath,'file://'+$PoProfileModulePath)) first.")
         )
         Remove-Module -Force PowerProfile.Core -ErrorAction Ignore
+        $env:PSExecutionPolicyPreference = $null
         throw
     }
 
@@ -73,28 +72,6 @@ if ($null -eq $PoProfileOriginScriptPath) {
         $SetupCompleted = $true
     }
 
-    #TODO can this be done later in the code using regular PoProfilePSModule installer?
-    if (-Not (Test-Path -PathType Container (Join-Path $PoProfileModulePath 'PowerProfile.Commands'))) {
-        Write-PoProfileProgress -ScriptTitle 'Installing module `PowerProfile.Commands`'
-
-        $Prerelease = (Import-PowerShellDataFile (Join-Path $PSScriptRoot 'PowerProfile.psd1')).PrivateData.PSData.Prerelease
-        if (Get-Command -Name Install-PSResource -ErrorAction Ignore) {
-            $cmd = 'Save-PSResource -Name PowerProfile.Commands -Path $PoProfileModulePath -Repository PSGallery -IncludeXML'
-            if ($null -ne $Prerelease) {
-                $cmd += ' -Prerelease'
-            }
-        } else {
-            $cmd = 'Save-Module -Name PowerProfile.Commands -Path $PoProfileModulePath -Repository PSGallery'
-            if ($null -ne $Prerelease) {
-                $cmd += ' -AllowPrerelease'
-            }
-            Set-PSRepository -Name PSGallery -InstallationPolicy Trusted
-        }
-
-        Invoke-Expression -Command $cmd
-        $SetupCompleted = $true
-    }
-
     if ($SetupCompleted) {
         Remove-Variable -Name 'SetupCompleted'
 
@@ -113,22 +90,13 @@ elseif ($PSScriptRoot -notmatch "^$([regex]::Escape($PoProfileModulePath))") {
         "Make sure the module files are moved back into $($PSStyle.FormatHyperlink('this Modules folder','file://'+$PoProfileModulePath))."
     )
     Remove-Module -Force PowerProfile.Core -ErrorAction Ignore
+    $env:PSExecutionPolicyPreference = $null
     throw
 }
 elseif ($PoProfileOriginScriptPath -ne $PROFILE.CurrentUserAllHosts) {
     Remove-Module -Force PowerProfile.Core -ErrorAction Ignore
+    $env:PSExecutionPolicyPreference = $null
     throw 'PowerProfile can not be imported into other PowerShell scripts or modules'
-}
-
-if (
-    (Get-FileHash -Path ([System.IO.Path]::Combine($PSScriptRoot,'profile.ps1'))).Hash -ne
-    (Get-FileHash -Path $PROFILE.CurrentUserAllHosts).Hash
-) {
-    Write-PoProfileProgress -ProfileTitle 'NOTICE' -ScriptTitleType Warning -ScriptTitle @(
-            "The profile initialization does not match requirements."
-            ("Check $($PSStyle.FormatHyperlink('profile.ps1','file://'+$PROFILE.CurrentUserAllHosts)) and run "+'`'+"$($PSStyle.Italic)Import-Module PowerProfile -Force$($PSStyle.ItalicOff)"+'`')
-            'to recover the desired state.'
-    )
 }
 #endregion
 
