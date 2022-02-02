@@ -13,7 +13,11 @@ foreach ($File in $Settings.GetEnumerator()) {
     if ($File.Name -match '\.Settings\.(json|psd1)$') {
         try {
             if ($Matches[1] -eq 'json') {
-                $Cfg = ConvertFrom-Json -InputObject ([System.IO.File]::ReadAllText($File.Value)) -AsHashtable
+                if ($IsCoreCLR) {
+                    $Cfg = ConvertFrom-Json -InputObject ([System.IO.File]::ReadAllText($File.Value)) -AsHashtable
+                } else {
+                    $Cfg = ConvertFrom-Json -InputObject ([System.IO.File]::ReadAllText($File.Value))
+                }
             } else {
                 $Cfg = Import-PowerShellDataFile -Path $File.Value
             }

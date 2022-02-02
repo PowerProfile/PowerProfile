@@ -179,21 +179,20 @@ function Get-PoProfileState {
 
     if (-Not (Get-Variable -Scope Script -Name 'PoProfileState' -ErrorAction Ignore)) {
         if ([System.IO.File]::Exists($p)) {
-            $Script:PoProfileState = ConvertFrom-Json -InputObject ([System.IO.File]::ReadAllText($p)) -NoEnumerate -Depth 100 -ErrorAction Ignore
+            if ($IsCoreCLR) {
+                $Script:PoProfileState = ConvertFrom-Json -InputObject ([System.IO.File]::ReadAllText($p)) -NoEnumerate -Depth 100 -ErrorAction Ignore
+            } else {
+                $Script:PoProfileState = ConvertFrom-Json -InputObject ([System.IO.File]::ReadAllText($p)) -ErrorAction Ignore
+            }
         } else {
-            [PSCustomObject]$Script:PoProfileState = @{}
+            [PSCustomObject]$Script:PoProfileState = [PSCustomObject]@{}
         }
     }
 
-    if ($Name) {
-        if ($null -ne $PoProfileState.PSObject.Properties.Item($Name)) {
-            return $PoProfileState.$Name
-        } else {
-            return [PSCustomObject]@{}
-        }
-    } else {
-        return $PoProfileState
+    if ($Name -and $null -ne $PoProfileState.PSObject.Properties.Item($Name)) {
+        return $PoProfileState.$Name
     }
+    return $PoProfileState
 }
 
 function Save-PoProfileState {

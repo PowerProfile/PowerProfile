@@ -27,7 +27,11 @@ Import-Module -Name PowerShellGet -MinimumVersion 3.0
 foreach ($File in $Files.GetEnumerator()) {
     if ($File.Name -match '\.PSResource\.(json|psd1)$') {
         if ($Matches[1] -eq 'json') {
-            $FData = ConvertFrom-Json -InputObject ([System.IO.File]::ReadAllText($File.Value)) -AsHashtable
+            if ($IsCoreCLR) {
+                $FData = ConvertFrom-Json -InputObject ([System.IO.File]::ReadAllText($File.Value)) -AsHashtable
+            } else {
+                $FData = ConvertFrom-Json -InputObject ([System.IO.File]::ReadAllText($File.Value))
+            }
         } else {
             $FData = Import-PowerShellDataFile -Path $File.Value
         }
