@@ -398,4 +398,5 @@ if(-Not $IsCommand -or $IsNoExit) {
 }
 #endregion
 
-$env:PSExecutionPolicyPreference = $null
+$env:PSExecutionPolicyPreference = $OrigPSExecutionPolicyPreference
+Remove-Variable -Name 'OrigPSExecutionPolicyPreference' -Scope Global -ErrorAction Ignore
