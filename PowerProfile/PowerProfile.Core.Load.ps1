@@ -15,7 +15,10 @@ if ($null -ne $PoProfileOriginScriptPath) {
                     'Modules'
                 )
 }
-elseif ($PSEdition -eq 'Desktop' -or $IsWindows) {
+elseif ($PSEdition -eq 'Desktop') {
+    Get-ChildItem -File -Recurse -Path $PSScriptRoot | ForEach-Object { Unblock-File -Path $_.FullName -ErrorAction Ignore -Confirm:$false -WhatIf:$false }
+}
+elseif ($IsWindows) {
     Get-ChildItem -File -Recurse -FollowSymlink -Path $PSScriptRoot | ForEach-Object { Unblock-File -Path $_.FullName -ErrorAction Ignore -Confirm:$false -WhatIf:$false }
 }
 
