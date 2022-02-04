@@ -37,7 +37,10 @@ elseif (-Not $IsWindows -or ($IsWindows -and $null -ne $env:IsElevated)) {
             Install-Module -Name PowerShellGet -Scope $Scope -Force -AllowClobber -Repository PSGallery -SkipPublisherCheck @splatting
             Remove-Module PowerShellGet -Force -ErrorAction Ignore
             Remove-Module PackageManagement -Force -ErrorAction Ignore
-            Install-PSResource -Name CompatPowerShellGet -Scope $Scope -Repository PSGallery -TrustRepository -Reinstall
+            # CompatPowerShellGet is not ready for use as of January 2022:
+            #  https://github.com/PowerShell/PowerShellGet/issues/533
+            #  https://github.com/PowerShell/CompatPowerShellGet/issues/18
+            # Install-PSResource -Name CompatPowerShellGet -Scope $Scope -Repository PSGallery -TrustRepository -Reinstall
             $MadeChanges = $true
         }
         catch {
@@ -54,7 +57,10 @@ elseif (-Not $IsWindows -or ($IsWindows -and $null -ne $env:IsElevated)) {
             Install-PSResource -Name PowerShellGet -Scope $Scope -Repository PSGallery -TrustRepository @splatting
             Remove-Module PowerShellGet -Force -ErrorAction Ignore
             Remove-Module PackageManagement -Force -ErrorAction Ignore
-            Install-PSResource -Name CompatPowerShellGet -Scope $Scope -Repository PSGallery -TrustRepository -Reinstall
+            # CompatPowerShellGet is not ready for use as of January 2022:
+            #  https://github.com/PowerShell/PowerShellGet/issues/533
+            #  https://github.com/PowerShell/CompatPowerShellGet/issues/18
+            # Install-PSResource -Name CompatPowerShellGet -Scope $Scope -Repository PSGallery -TrustRepository -Reinstall
             $MadeChanges = $true
         }
         catch {
