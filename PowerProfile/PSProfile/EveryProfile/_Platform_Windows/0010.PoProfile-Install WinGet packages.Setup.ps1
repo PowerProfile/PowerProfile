@@ -1,69 +1,62 @@
-<#
-.SYNOPSIS
-    Install Winget packages
+$Settings = (Get-PoProfileContent).ConfigDirs.$CurrentProfile.'Winget'
 
-.DESCRIPTION
-    Installs Winget and desired packages on Windows
-
-.LINK
-    https://github.com/PowerProfile/psprofile-common
-#>
-
-$HasPackageManager = $false
-
-# winget on Windows 11 is so slooooow ... >:-(
-if ([System.Environment]::OSVersion.Version.Build -ge 22000) {
-  $response = Read-Host -Prompt '       This might take a while: Check for missing software now? [y/N]> '
-  if ($response -ine 'y') {
-    break
-  }
+if ($null -eq $Settings -or $Settings.Count -eq 0) {
+    $SetupState.$ScriptFullName.State = 'Complete'
+    continue ScriptNames
 }
 
-if (Get-Command winget -CommandType Application -ErrorAction Ignore) {
-  $HasPackageManager = $true
-} else {
-  Start-Job -Name WingetInstall -ScriptBlock { Add-AppxPackage -Path https://aka.ms/getwinget -ErrorAction Ignore }
-  Wait-Job -Name WingetInstall
+if (-Not (Get-Command winget -CommandType Application -ErrorAction Ignore)) {
+    Start-Job -Name WingetInstall -ScriptBlock { Add-AppxPackage -Path https://aka.ms/getwinget -ErrorAction Ignore }
+    Wait-Job -Name WingetInstall
 
-  if (Get-Command winget -CommandType Application -ErrorAction Ignore) {
-    $HasPackageManager = $true
-  }
+    if (-Not (Get-Command winget -CommandType Application -ErrorAction Ignore)) {
+        $SetupState.$ScriptFullName.State = 'FailedWingetSetup'
+        continue ScriptNames
+    }
 }
 
-if ($HasPackageManager) {
-  $ConfigDir = Join-Path $(Split-Path $MyInvocation.MyCommand.Path) $(Join-Path 'Config' 'Winget')
+[System.Collections.ArrayList]$Wingetfiles = $Settings.keys
 
-  if (Test-Path -PathType Container $ConfigDir -ErrorAction Ignore) {
-    Push-Location $ConfigDir
+if ($Wingetfiles.Count -gt 1) {
+    if ($Wingetfiles -contains 'PoProfile.Winget.psd1') {
+        $Wingetfiles.Remove('PoProfile.Winget.psd1')
+        $Wingetfiles.Insert(0,'PoProfile.Winget.psd1')
+    }
+    if ($Wingetfiles -contains 'PoProfile.Winget.json') {
+        $Wingetfiles.Remove('PoProfile.Winget.json')
+        $Wingetfiles.Insert(0,'PoProfile.Winget.json')
+    }
+}
 
-    Get-ChildItem *.winget.json -Exclude global-* -Recurse -File -FollowSymlink | ForEach-Object {
-      $json = Get-Content $_.FullName -Raw | ConvertFrom-Json
-      foreach ($Source in $json.Sources) {
+$ExitCodeSum = 0
+
+foreach ($Wingetfile in $Wingetfiles) {
+    if ($Wingetfile -match '\.Winget\.json$') {
+        try {
+            $Cfg = ConvertFrom-Json -InputObject ([System.IO.File]::ReadAllText($Settings.$Wingetfile))
+        }
+        catch {
+            continue
+        }
+    } else {
+        continue
+    }
+
+    # we can't use the winget import command as it will not detect apps that are already installed
+    foreach ($Source in $Cfg.Sources) {
         foreach ($Package in $Source.Packages) {
-          $listApp = winget list --exact --source $source.SourceDetails.Name -q $Package.PackageIdentifier
-          if (-Not [String]::Join("", $listApp).Contains($Package.PackageIdentifier)) {
-            Write-Host ('      * Installing ' + $Package.PackageIdentifier + ' ...')
-            $null = winget install --exact --silent $Package.PackageIdentifier --source $source.SourceDetails.Name --accept-source-agreements --accept-package-agreements
-          }
-        }
-      }
-    }
-
-    if ($env:IsElevated) {
-      Get-ChildItem global-*.winget.json -Recurse -File -FollowSymlink | ForEach-Object {
-        $json = Get-Content $_.FullName -Raw | ConvertFrom-Json
-        foreach ($Source in $json.Sources) {
-          foreach ($Package in $Source.Packages) {
-            $listApp = winget list --exact --source $source.SourceDetails.Name -q $Package.PackageIdentifier
+            $listApp = winget list --exact --source $Source.SourceDetails.Name -q $Package.PackageIdentifier
             if (-Not [String]::Join("", $listApp).Contains($Package.PackageIdentifier)) {
-              Write-Host ('      * Installing ' + $Package.PackageIdentifier + ' ...')
-              $null = winget install --exact --silent $Package.PackageIdentifier --source $source.SourceDetails.Name --accept-source-agreements --accept-package-agreements
+                Write-Host ('      ' + $Package.PackageIdentifier)
+                winget install --exact $Package.PackageIdentifier --source $Source.SourceDetails.Name --accept-source-agreements --accept-package-agreements
+                if ($LASTEXITCODE -gt 0) {
+                    $ExitCodeSum += $LASTEXITCODE
+                }
             }
-          }
         }
-      }
     }
+}
 
-    Pop-Location
-  }
+if ($ExitCodeSum -eq 0) {
+    $SetupState.$ScriptFullName.State = 'Complete'
 }

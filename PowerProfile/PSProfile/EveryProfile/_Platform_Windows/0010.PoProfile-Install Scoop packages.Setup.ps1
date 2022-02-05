@@ -1,67 +1,65 @@
-<#
-.SYNOPSIS
-    Install Scoop packages
+$Settings = (Get-PoProfileContent).ConfigDirs.$CurrentProfile.'Scoop'
 
-.DESCRIPTION
-    Installs Scoop and desired packages on Windows
-
-.LINK
-    https://github.com/PowerProfile/psprofile-common
-#>
-
-$HasScoop = $false
-
-if (Get-Command scoop -CommandType Application -ErrorAction Ignore) {
-  $HasScoop = $true
-} else {
-  $null = Invoke-Expression (New-Object System.Net.WebClient).DownloadString('https://get.scoop.sh/')
-
-  if (Get-Command scoop -CommandType Application -ErrorAction Ignore) {
-    $HasScoop = $true
-  }
+if ($null -eq $Settings -or $Settings.Count -eq 0) {
+    $SetupState.$ScriptFullName.State = 'Complete'
+    continue ScriptNames
 }
 
-if ($HasScoop) {
-  $ConfigDir = Join-Path $(Split-Path $MyInvocation.MyCommand.Path) $(Join-Path 'Config' 'Scoop')
+if (-Not (Get-Command scoop -CommandType Application -ErrorAction Ignore)) {
+    Invoke-WebRequest -Uri 'https://get.scoop.sh/' -TimeoutSec 5 | Invoke-Expression
 
-  if (Test-Path -PathType Container $ConfigDir -ErrorAction Ignore) {
-    Push-Location $ConfigDir
+    if (-Not (Get-Command scoop -CommandType Application -ErrorAction Ignore)) {
+        $SetupState.$ScriptFullName.State = 'FailedScoopSetup'
+        continue ScriptNames
+    }
+}
 
-    $buckets = scoop bucket list
-    $apps = $(scoop export) | Select-String '^(\S+) *(?:\(v:(\w+)\))? *(?:\[(\S+)\])?$' | ForEach-Object { $_.matches.groups[1].value }
+[System.Collections.ArrayList]$Scoopfiles = $Settings.keys
 
-    Get-ChildItem *.scoop.json -Exclude global-* -Recurse -File | ForEach-Object {
-      $json = Get-Content $_.FullName -Raw | ConvertFrom-Json
-      foreach ($Bucket in $json.Buckets) {
+if ($Scoopfiles.Count -gt 1) {
+    if ($Scoopfiles -contains 'PoProfile.Scoop.psd1') {
+        $Scoopfiles.Remove('PoProfile.Scoop.psd1')
+        $Scoopfiles.Insert(0,'PoProfile.Scoop.psd1')
+    }
+    if ($Scoopfiles -contains 'PoProfile.Scoop.json') {
+        $Scoopfiles.Remove('PoProfile.Scoop.json')
+        $Scoopfiles.Insert(0,'PoProfile.Scoop.json')
+    }
+}
+
+$ExitCodeSum = 0
+$buckets = scoop bucket list
+$apps = $(scoop export) | Select-String '^(\S+) *(?:\(v:(\S+)\))? *(?:\[(\S+)\])?$' | ForEach-Object { $_.matches.groups[1].value }
+
+foreach ($Scoopfile in $Scoopfiles) {
+    if ($Scoopfile -match '\.Scoop\.json$') {
+        try {
+            $Cfg = ConvertFrom-Json -InputObject ([System.IO.File]::ReadAllText($Settings.$Scoopfile))
+        }
+        catch {
+            continue
+        }
+    } else {
+        continue
+    }
+
+    foreach ($Bucket in $Cfg.Buckets) {
         if (-Not $buckets.Contains($Bucket.BucketDetails.Name)) {
-          scoop bucket add $Bucket.BucketDetails.Name
+            scoop bucket add $Bucket.BucketDetails.Name
         }
 
         foreach ($App in $Bucket.Apps) {
-          if ($apps -and -not $apps.Contains($App.Name)) {
-            scoop install $App.Name
-          }
-        }
-      }
-    }
-
-    if ($env:IsElevated) {
-      Get-ChildItem global-*.scoop.json -Recurse -File | ForEach-Object {
-        $json = Get-Content $_.FullName -Raw | ConvertFrom-Json
-        foreach ($Bucket in $json.Buckets) {
-          if (-Not $buckets.Contains($Bucket.BucketDetails.Name)) {
-            scoop bucket add $Bucket.BucketDetails.Name
-          }
-
-          foreach ($App in $Bucket.Apps) {
-            if ($apps -and -not $apps.Contains($App.Name)) {
-              scoop install $App.Name --global
+            if (($null -eq $apps) -or -not $apps.Contains($App.Name)) {
+                Write-Host ('      ' + $App.Name)
+                scoop install $App.Name
+                if ($LASTEXITCODE -gt 0) {
+                    $ExitCodeSum += $LASTEXITCODE
+                }
             }
-          }
         }
-      }
     }
+}
 
-    Pop-Location
-  }
+if ($ExitCodeSum -eq 0) {
+    $SetupState.$ScriptFullName.State = 'Complete'
 }

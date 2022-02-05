@@ -1,6 +1,6 @@
 $Settings = (Get-PoProfileContent).ConfigDirs.$CurrentProfile.'Settings'
 
-if ($null -eq $Settings) {
+if ($null -eq $Settings -or $Settings.Count -eq 0) {
     continue ScriptNames
 }
 

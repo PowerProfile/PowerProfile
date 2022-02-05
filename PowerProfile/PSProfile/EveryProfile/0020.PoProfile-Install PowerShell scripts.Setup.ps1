@@ -14,7 +14,7 @@ if (
 
 $Files = (Get-PoProfileContent).ConfigDirs.$CurrentProfile.'Install-Script'
 
-if ($null -eq $Files) {
+if ($null -eq $Files -or $Files.Count -eq 0) {
     $SetupState.$ScriptFullName.State = 'Complete'
     Continue ScriptNames
 }
