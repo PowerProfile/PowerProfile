@@ -123,7 +123,7 @@ function Set-PoProfileState {
     )
 
     if (-Not (Get-Variable -Scope Script -Name 'PoProfileState' -ErrorAction Ignore)) {
-        Get-PoProfileState
+        $null = Get-PoProfileState
     }
 
     if ($Value -eq [bool]::TrueString -or $Value -eq [bool]::FalseString) {
@@ -174,16 +174,12 @@ function Get-PoProfileState {
             }
         ),
         'PowerProfile',
-        'PowerProfile.state.json'
+        'PowerProfile.state.xml'
     )
 
     if (-Not (Get-Variable -Scope Script -Name 'PoProfileState' -ErrorAction Ignore)) {
         if ([System.IO.File]::Exists($p)) {
-            if ($IsCoreCLR) {
-                $Script:PoProfileState = ConvertFrom-Json -InputObject ([System.IO.File]::ReadAllText($p)) -NoEnumerate -Depth 100 -ErrorAction Ignore
-            } else {
-                $Script:PoProfileState = ConvertFrom-Json -InputObject ([System.IO.File]::ReadAllText($p)) -ErrorAction Ignore
-            }
+            $Script:PoProfileState = Import-Clixml -LiteralPath $p
         } else {
             [PSCustomObject]$Script:PoProfileState = [PSCustomObject]@{}
         }
@@ -212,17 +208,17 @@ function Save-PoProfileState {
             }
         ),
         'PowerProfile',
-        'PowerProfile.state.json'
+        'PowerProfile.state.xml'
     )
 
     if (($PoProfileState.PSObject.Properties).Count -gt 0) {
-        $baseDir = Split-Path -Path $p
+        $baseDir = Split-Path -LiteralPath $p
         if (-Not ([System.IO.Directory]::Exists($baseDir))) {
             $null = New-Item -Type Container -Force $baseDir -ErrorAction Stop
         }
-        ConvertTo-Json $PoProfileState -Compress -Depth 100 | Set-Content -Path $p -Encoding ASCII
+        Export-Clixml -LiteralPath $p -Encoding UTF8 -Depth 1024 -Force -InputObject $PoProfileState -ErrorAction Ignore
     } elseif ([System.IO.File]::Exists($p)) {
-        Remove-Item -Path $p -ErrorAction Ignore
+        Remove-Item -LiteralPath $p -ErrorAction Ignore
     }
 }
 
@@ -286,12 +282,12 @@ function Reset-PoProfileState {
             }
         ),
         'PowerProfile',
-        'PowerProfile.state.json'
+        'PowerProfile.state.xml'
     )
 
     if ([System.IO.File]::Exists($p)) {
         if ($Force -or $PSCmdlet.ShouldProcess($p)) {
-            Remove-Item -Path $p -ErrorAction Ignore -Confirm:$false
+            Remove-Item -LiteralPath $p -ErrorAction Ignore -Confirm:$false
             Remove-Variable -Scope Script -Name PoProfileState -ErrorAction Ignore -Confirm:$false
             [PSCustomObject]$Script:PoProfileState = @{}
         }
