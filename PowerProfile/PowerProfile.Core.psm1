@@ -1044,7 +1044,16 @@ if ($null -eq $env:PSLVL) {
         $env:XDG_STATE_HOME  = [System.IO.Path]::Combine($env:XDG_DATA_HOME,'State')
         $env:XDG_CACHE_HOME  = [System.IO.Path]::Combine($env:XDG_DATA_HOME,'Cache')
 
-        $WindowsPrincipal = [Security.Principal.WindowsPrincipal]::new([Security.Principal.WindowsIdentity]::GetCurrent())
+        $WindowsIdentity = [Security.Principal.WindowsIdentity]::GetCurrent()
+        if (
+            ($WindowsIdentity.Groups.IsWellKnown([Security.Principal.WellKnownSidType]::BuiltinAdministratorsSid) -eq $true) -or
+            ($WindowsIdentity.Owner.IsWellKnown([Security.Principal.WellKnownSidType]::BuiltinAdministratorsSid) -eq $true)
+        ) {
+            $env:CanElevate = $true
+            $env:ElevationNeedsAuth = $true
+        }
+
+        $WindowsPrincipal = [Security.Principal.WindowsPrincipal]::new($WindowsIdentity)
         if ($WindowsPrincipal.IsInRole([Security.Principal.WindowsBuiltInRole]::Administrator) -eq 1) {
             $env:IsElevated = $true
         }
@@ -1100,7 +1109,17 @@ if ($null -eq $env:PSLVL) {
         $env:XDG_STATE_HOME         = [System.IO.Path]::Combine(([System.Environment]::GetFolderPath('UserProfile')),'.local','state')
         $env:XDG_CACHE_HOME         = [System.IO.Path]::Combine(([System.Environment]::GetFolderPath('UserProfile')),'.cache')
 
-        if (0 -eq (id -u)) {
+        if (Get-Command -CommandType Application -Name sudo) {
+            $prompt = $(sudo --non-interactive --validate 2>&1)
+            if ($LASTEXITCODE -eq 0) {
+                $env:CanElevate = $true
+            } elseif ($prompt -match '^sudo:') {
+                $env:CanElevate = $true
+                $env:ElevationNeedsAuth = $true
+            }
+        }
+
+        if (0 -eq $(id -u)) {
             $env:IsElevated = $true
         }
 
