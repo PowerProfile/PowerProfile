@@ -1,19 +1,25 @@
-<#
-.SYNOPSIS
-    macOS Homebrew and software installation
+if (
+    (
+        $CurrentProfile -eq 'Profile' -and
+        $SetupState.'0001.PoProfile-Validate PowerShellGet.Setup.ps1'.State -ne 'Complete'
+    ) -or
+    (
+        $CurrentProfile -ne 'Profile' -and
+        (Get-PoProfileState 'PoProfile.Setup.Profile').'0001.PoProfile-Validate PowerShellGet.Setup.ps1'.State -ne 'Complete'
+    )
+) {
+    $SetupState.$ScriptFullName.State = 'PendingPowerShellGetUpgrade'
+    continue ScriptNames
+}
 
-.DESCRIPTION
-    macOS Homebrew and software installation
+$Settings = (Get-PoProfileContent).ConfigDirs.$CurrentProfile.'Homebrew'
 
-.LINK
-    https://github.com/PowerProfile/psprofile-common
-#>
+if ($null -eq $Settings -or $Settings.Count -eq 0) {
+    $SetupState.$ScriptFullName.State = 'Complete'
+    continue ScriptNames
+}
 
-$HasHomebrew = $false
-
-if (Get-Command brew -CommandType Application -ErrorAction Ignore) {
-    $HasHomebrew = $true
-} else {
+if (-Not (Get-Command brew -CommandType Application -ErrorAction Ignore)) {
     & "$PSScriptRoot/install-homebrew.sh"
 
     $(
@@ -25,31 +31,36 @@ if (Get-Command brew -CommandType Application -ErrorAction Ignore) {
         }
     ) | Invoke-Expression -ErrorAction Ignore
 
-    if (Get-Command brew -CommandType Application -ErrorAction Ignore) {
-        $HasHomebrew = $true
+    if (-Not (Get-Command brew -CommandType Application -ErrorAction Ignore)) {
+        $SetupState.$ScriptFullName.State = 'FailedHomebrewSetup'
+        continue ScriptNames
     }
 }
 
-if ($HasHomebrew) {
-    [System.Collections.ArrayList]$Brewfiles = (Get-PoProfileContent).ConfigDirs.$CurrentProfile.Homebrew.keys
+[System.Collections.ArrayList]$Brewfiles = (Get-PoProfileContent).ConfigDirs.$CurrentProfile.Homebrew.keys
 
-    if ($Brewfiles -contains 'Brewfile') {
-        $Brewfiles.Remove('Brewfile')
-        $Brewfiles.Insert(0,'Brewfile')
-    }
-    $ExitCodeSum = 0
-    foreach ($Brewfile in $Brewfiles) {
-        if ($Brewfile -notmatch 'Brewfile$') {
-            continue
-        }
+if ($Brewfiles.Count -gt 1 -and $Brewfiles -contains 'Brewfile') {
+    $Brewfiles.Remove('Brewfile')
+    $Brewfiles.Insert(0,'Brewfile')
+}
 
-        & "$PSScriptRoot/install-homebrew-packages.sh" "$((Get-PoProfileContent).ConfigDirs.$CurrentProfile.Homebrew.$Brewfile)" | Out-Default
-        if ($LASTEXITCODE -gt 0) {
-            $ExitCodeSum += $LASTEXITCODE
-        }
+$ExitCodeSum = 0
+
+foreach ($Brewfile in $Brewfiles) {
+    if ($Brewfile -notmatch '^(?:(.+)\.)?Brewfile$') {
+        continue
     }
 
-    if ($ExitCodeSum -eq 0) {
-        $SetupState.$ScriptFullName.State = 'Complete'
+    if ($null -ne $Matches[1]) {
+        Write-Host ('      ' + $Matches[1])
     }
+
+    & "$PSScriptRoot/install-homebrew-package.sh" "$((Get-PoProfileContent).ConfigDirs.$CurrentProfile.Homebrew.$Brewfile)" | Out-Default
+    if ($LASTEXITCODE -gt 0) {
+        $ExitCodeSum += $LASTEXITCODE
+    }
+}
+
+if ($ExitCodeSum -eq 0) {
+    $SetupState.$ScriptFullName.State = 'Complete'
 }
