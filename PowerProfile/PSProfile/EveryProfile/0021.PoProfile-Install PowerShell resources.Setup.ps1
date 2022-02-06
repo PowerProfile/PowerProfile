@@ -8,16 +8,15 @@ if (
         (Get-PoProfileState 'PoProfile.Setup.Profile').'0001.PoProfile-Validate PowerShellGet.Setup.ps1'.State -ne 'Complete'
     )
 ) {
-    $SetupState.$ScriptFullName.State = 'PendingPackageManagementSetup'
-    Continue ScriptNames
+    $SetupState.$ScriptFullName.State = 'PendingPowerShellGetUpgrade'
+    continue ScriptNames
 }
-
 
 $Files = (Get-PoProfileContent).ConfigDirs.$CurrentProfile.'Install-PSResource'
 
 if ($null -eq $Files -or $Files.Count -eq 0) {
     $SetupState.$ScriptFullName.State = 'Complete'
-    Continue ScriptNames
+    continue ScriptNames
 }
 
 Remove-Module PowerShellGet -Force -ErrorAction Ignore
