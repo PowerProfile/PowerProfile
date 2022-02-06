@@ -1,6 +1,6 @@
 if ($SetupState.'0001.PoProfile-Validate PowerShell Package Management.Setup.ps1'.State -ne 'Complete') {
     $SetupState.$ScriptFullName.State = 'PendingPackageManagementSetup'
-    Continue ScriptNames
+    continue ScriptNames
 }
 
 Remove-Module PowerShellGet -Force -ErrorAction Ignore

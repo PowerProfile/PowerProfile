@@ -1,4 +1,18 @@
-$Settings = (Get-PoProfileContent).ConfigDirs.$CurrentProfile.'Winget'
+if (
+    (
+        $CurrentProfile -eq 'Profile' -and
+        $SetupState.'0001.PoProfile-Validate PowerShellGet.Setup.ps1'.State -ne 'Complete'
+    ) -or
+    (
+        $CurrentProfile -ne 'Profile' -and
+        (Get-PoProfileState 'PoProfile.Setup.Profile').'0001.PoProfile-Validate PowerShellGet.Setup.ps1'.State -ne 'Complete'
+    )
+) {
+    $SetupState.$ScriptFullName.State = 'PendingPowerShellGetUpgrade'
+    continue ScriptNames
+}
+
+$Settings = (Get-PoProfileContent).ConfigDirs.$CurrentProfile.'WinGet'
 
 if ($null -eq $Settings -or $Settings.Count -eq 0) {
     $SetupState.$ScriptFullName.State = 'Complete'
@@ -10,7 +24,7 @@ if (-Not (Get-Command winget -CommandType Application -ErrorAction Ignore)) {
     Wait-Job -Name WingetInstall
 
     if (-Not (Get-Command winget -CommandType Application -ErrorAction Ignore)) {
-        $SetupState.$ScriptFullName.State = 'FailedWingetSetup'
+        $SetupState.$ScriptFullName.State = 'FailedWinGetSetup'
         continue ScriptNames
     }
 }
@@ -18,20 +32,21 @@ if (-Not (Get-Command winget -CommandType Application -ErrorAction Ignore)) {
 [System.Collections.ArrayList]$Wingetfiles = $Settings.keys
 
 if ($Wingetfiles.Count -gt 1) {
-    if ($Wingetfiles -contains 'PoProfile.Winget.psd1') {
-        $Wingetfiles.Remove('PoProfile.Winget.psd1')
-        $Wingetfiles.Insert(0,'PoProfile.Winget.psd1')
+    if ($Wingetfiles -contains 'PoProfile.WinGet.psd1') {
+        $Wingetfiles.Remove('PoProfile.WinGet.psd1')
+        $Wingetfiles.Insert(0,'PoProfile.WinGet.psd1')
     }
-    if ($Wingetfiles -contains 'PoProfile.Winget.json') {
-        $Wingetfiles.Remove('PoProfile.Winget.json')
-        $Wingetfiles.Insert(0,'PoProfile.Winget.json')
+    if ($Wingetfiles -contains 'PoProfile.WinGet.json') {
+        $Wingetfiles.Remove('PoProfile.WinGet.json')
+        $Wingetfiles.Insert(0,'PoProfile.WinGet.json')
     }
 }
 
 $ExitCodeSum = 0
+[version]$version = (winget --version).Substring(1)
 
 foreach ($Wingetfile in $Wingetfiles) {
-    if ($Wingetfile -match '\.Winget\.json$') {
+    if ($Wingetfile -match '\.WinGet\.json$') {
         try {
             $Cfg = ConvertFrom-Json -InputObject ([System.IO.File]::ReadAllText($Settings.$Wingetfile))
         }
@@ -42,14 +57,111 @@ foreach ($Wingetfile in $Wingetfiles) {
         continue
     }
 
-    # we can't use the winget import command as it will not detect apps that are already installed
+    if ($null -ne $Cfg.WinGetVersion -and $version -lt [version]$Cfg.WinGetVersion) {
+        continue
+    }
+
+    # We can't use the WinGet import command as it will not detect apps that are already installed.
+    #  Also, JSON standard format will not support every command line flag, e.g. Scope.
     foreach ($Source in $Cfg.Sources) {
+        if ($null -eq $Source.SourceDetails.Name) {
+            continue
+        }
+
+        $ListSource = winget source list --name $Source.SourceDetails.Name
+
+        if ($LASTEXITCODE -ne 0) {
+            if ($CanElevate -or $IsElevated) {
+                if ($Source.SourceDetails.Name -eq 'msstore') {
+                    $cmd = Start-Process -Verb RunAs -WindowStyle Hidden -PassThru -Wait -FilePath winget -ArgumentList @(
+                        'source'
+                        'reset'
+                        '--force'
+                        '--accept-source-agreements'
+                        '--name msstore'
+                    )
+                    if ($cmd.ExitCode -ne 0) {
+                        $ExitCodeSum += $cmd.ExitCode
+                        continue
+                    }
+                }
+                elseif ($Source.SourceDetails.Name -eq 'winget') {
+                    $cmd = Start-Process -Verb RunAs -WindowStyle Hidden -PassThru -Wait -FilePath winget -ArgumentList @(
+                        'source'
+                        'reset'
+                        '--force'
+                        '--accept-source-agreements'
+                        '--name winget'
+                    )
+                    if ($cmd.ExitCode -ne 0) {
+                        $ExitCodeSum += $cmd.ExitCode
+                        continue
+                    }
+                }
+                elseif ($null -ne $Source.SourceDetails.Argument) {
+                    $cmd = Start-Process -Verb RunAs -WindowStyle Hidden -PassThru -Wait -FilePath winget -ArgumentList @(
+                        'source'
+                        'add'
+                        '--accept-source-agreements'
+                        "--arg $($Source.SourceDetails.Argument)"
+                        $(
+                            if ($null -ne $Source.SourceDetails.Type) {
+                                "--type $($Source.SourceDetails.Type)"
+                            }
+                        )
+                    )
+                    if ($cmd.ExitCode -ne 0) {
+                        $ExitCodeSum += $cmd.ExitCode
+                        continue
+                    }
+                } else {
+                    $ExitCodeSum += $LASTEXITCODE
+                    continue
+                }
+            } else {
+                $ExitCodeSum += $LASTEXITCODE
+                continue
+            }
+        }
+
         foreach ($Package in $Source.Packages) {
-            $listApp = winget list --exact --source $Source.SourceDetails.Name -q $Package.PackageIdentifier
-            if (-Not [String]::Join("", $listApp).Contains($Package.PackageIdentifier)) {
-                Write-Host ('      ' + $Package.PackageIdentifier)
-                winget install --exact $Package.PackageIdentifier --source $Source.SourceDetails.Name --accept-source-agreements --accept-package-agreements
-                if ($LASTEXITCODE -gt 0) {
+            $Params = @{
+                source = $Source.SourceDetails.Name
+            }
+            switch ($Package.keys) {
+                PackageIdentifier {
+                    $Params.id = $Package.$_
+                    continue
+                }
+                Default {
+                    $Params.$($_.ToLower()) = $Package.$_
+                }
+            }
+            if ($null -eq $Params.id) {
+                continue
+            }
+            if ($Params.name) {
+                $AppName = $Params.name
+                $ListApps = winget list --name `"$AppName`"
+            } else {
+                $AppName = $Params.id
+                $ListApps = winget list --id `"$AppName`" --exact
+            }
+            if ($ListApps -notmatch $AppName) {
+                Write-Host ('      ' + $AppName)
+                $cmd = 'winget install'
+                foreach ($Param in $Params.GetEnumerator()) {
+                    if ($Param.Name.Length -eq 1) {
+                        $cmd += ' -' + $Param.Name
+                    } else {
+                        $cmd += ' --' + $Param.Name
+                    }
+                    if ($Param.Value -isnot [Boolean]) {
+                        $cmd += ' ' + $Param.Value
+                    }
+                }
+                Invoke-Expression "$($cmd)"
+                if ($LASTEXITCODE -ne 0) {
                     $ExitCodeSum += $LASTEXITCODE
                 }
             }
