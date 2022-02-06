@@ -1,3 +1,17 @@
+if (
+    (
+        $CurrentProfile -eq 'Profile' -and
+        $SetupState.'0001.PoProfile-Validate PowerShellGet.Setup.ps1'.State -ne 'Complete'
+    ) -or
+    (
+        $CurrentProfile -ne 'Profile' -and
+        (Get-PoProfileState 'PoProfile.Setup.Profile').'0001.PoProfile-Validate PowerShellGet.Setup.ps1'.State -ne 'Complete'
+    )
+) {
+    $SetupState.$ScriptFullName.State = 'PendingPowerShellGetUpgrade'
+    continue ScriptNames
+}
+
 $Settings = (Get-PoProfileContent).ConfigDirs.$CurrentProfile.'Scoop'
 
 if ($null -eq $Settings -or $Settings.Count -eq 0) {
