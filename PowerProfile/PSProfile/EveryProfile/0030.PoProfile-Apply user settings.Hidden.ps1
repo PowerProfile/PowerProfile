@@ -48,7 +48,7 @@ foreach ($File in $Settings.GetEnumerator()) {
                 ((Get-Module -ListAvailable -Name $Cfg.ModuleName).Version -ne [version]$Cfg.RequiredVersion)
             )
         ) {
-            Continue
+            continue
         }
     }
 

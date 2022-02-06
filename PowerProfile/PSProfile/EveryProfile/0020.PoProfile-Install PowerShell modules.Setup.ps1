@@ -9,14 +9,14 @@ if (
     )
 ) {
     $SetupState.$ScriptFullName.State = 'PendingPackageManagementSetup'
-    Continue ScriptNames
+    continue ScriptNames
 }
 
 $Files = (Get-PoProfileContent).ConfigDirs.$CurrentProfile.'Install-Module'
 
 if ($null -eq $Files -or $Files.Count -eq 0) {
     $SetupState.$ScriptFullName.State = 'Complete'
-    Continue ScriptNames
+    continue ScriptNames
 }
 
 Remove-Module PowerShellGet -Force -ErrorAction Ignore
