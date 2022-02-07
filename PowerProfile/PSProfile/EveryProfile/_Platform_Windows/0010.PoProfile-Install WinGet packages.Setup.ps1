@@ -132,7 +132,7 @@ foreach ($Wingetfile in $Wingetfiles) {
                 if ($Property.Name -eq 'PackageIdentifier') {
                     $Params.id = $Property.Value
                 } else {
-                    $Params.$($Property.Name.ToLower()) = $Property.Value                  
+                    $Params.$($Property.Name.ToLower()) = $Property.Value
                 }
             }
             if ($null -eq $Params.id) {
@@ -148,10 +148,10 @@ foreach ($Wingetfile in $Wingetfiles) {
                 $AppName = $Params.id
                 $ListApps = (winget list --source $Params.source --id $AppName --exact).Split("`n")
             }
+            Write-Host ('      ' + $AppName)
             if ($ListApps.Count -ge 4) {
                 continue
             }
-            Write-Host ('      ' + $AppName)
             $cmd = 'winget install'
             foreach ($Param in $Params.GetEnumerator()) {
                 if ($Param.Name.Length -eq 1) {
