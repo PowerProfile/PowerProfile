@@ -128,42 +128,44 @@ foreach ($Wingetfile in $Wingetfiles) {
             $Params = @{
                 source = $Source.SourceDetails.Name
             }
-            switch ($Package.keys) {
-                PackageIdentifier {
-                    $Params.id = $Package.$_
-                    continue
-                }
-                Default {
-                    $Params.$($_.ToLower()) = $Package.$_
+            foreach ($Property in $Package.PSObject.Properties) {
+                if ($Property.Name -eq 'PackageIdentifier') {
+                    $Params.id = $Property.Value
+                } else {
+                    $Params.$($Property.Name.ToLower()) = $Property.Value                  
                 }
             }
             if ($null -eq $Params.id) {
                 continue
             }
+
             if ($Params.name) {
                 $AppName = $Params.name
-                $ListApps = winget list --name `"$AppName`"
+                $ListApps = (winget list --name $AppName --exact).Split("`n")
+                $Params.Remove('Name')
+                $Params.exact = $true
             } else {
                 $AppName = $Params.id
-                $ListApps = winget list --id `"$AppName`" --exact
+                $ListApps = (winget list --source $Params.source --id $AppName --exact).Split("`n")
             }
-            if ($ListApps -notmatch $AppName) {
-                Write-Host ('      ' + $AppName)
-                $cmd = 'winget install'
-                foreach ($Param in $Params.GetEnumerator()) {
-                    if ($Param.Name.Length -eq 1) {
-                        $cmd += ' -' + $Param.Name
-                    } else {
-                        $cmd += ' --' + $Param.Name
-                    }
-                    if ($Param.Value -isnot [Boolean]) {
-                        $cmd += ' ' + $Param.Value
-                    }
+            if ($ListApps.Count -ge 4) {
+                continue
+            }
+            Write-Host ('      ' + $AppName)
+            $cmd = 'winget install'
+            foreach ($Param in $Params.GetEnumerator()) {
+                if ($Param.Name.Length -eq 1) {
+                    $cmd += ' -' + $Param.Name
+                } else {
+                    $cmd += ' --' + $Param.Name
                 }
-                Invoke-Expression "$($cmd)"
-                if ($LASTEXITCODE -ne 0) {
-                    $ExitCodeSum += $LASTEXITCODE
+                if ($Param.Value -isnot [Boolean]) {
+                    $cmd += ' ' + $Param.Value
                 }
+            }
+            Invoke-Expression $cmd
+            if ($LASTEXITCODE -ne 0) {
+                $ExitCodeSum += $LASTEXITCODE
             }
         }
     }
