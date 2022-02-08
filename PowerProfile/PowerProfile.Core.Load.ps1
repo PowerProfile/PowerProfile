@@ -22,7 +22,7 @@ elseif ($IsWindows) {
     Get-ChildItem -File -Recurse -FollowSymlink -Path $PSScriptRoot | ForEach-Object { Unblock-File -Path $_.FullName -ErrorAction Ignore -Confirm:$false -WhatIf:$false }
 }
 
-[Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12
+[System.Net.ServicePointManager]::SecurityProtocol = [System.Net.ServicePointManager]::SecurityProtocol -bor 3072
 
 Import-Module -Force -DisableNameChecking -Name ([System.IO.Path]::Combine($PSScriptRoot,'PowerProfile.Core.psd1')) -ErrorAction Stop
 #endregion
