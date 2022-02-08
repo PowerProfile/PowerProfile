@@ -7,6 +7,7 @@
                 {
                     "Name": "PowerShell",
                     "PackageIdentifier": "Microsoft.PowerShell",
+                    "silent": true,
                     "accept-source-agreements": true,
                     "accept-package-agreements": true
                 }

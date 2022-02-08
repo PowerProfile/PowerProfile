@@ -72,26 +72,14 @@ foreach ($Wingetfile in $Wingetfiles) {
 
         if ($LASTEXITCODE -ne 0) {
             if ($CanElevate -or $IsElevated) {
-                if ($Source.SourceDetails.Name -eq 'msstore') {
+                if (
+                    $Source.SourceDetails.Name -eq 'msstore' -or
+                    $Source.SourceDetails.Name -eq 'winget'
+                ) {
                     $cmd = Start-Process -Verb RunAs -WindowStyle Hidden -PassThru -Wait -FilePath winget -ArgumentList @(
                         'source'
                         'reset'
                         '--force'
-                        '--accept-source-agreements'
-                        '--name msstore'
-                    )
-                    if ($cmd.ExitCode -ne 0) {
-                        $ExitCodeSum += $cmd.ExitCode
-                        continue
-                    }
-                }
-                elseif ($Source.SourceDetails.Name -eq 'winget') {
-                    $cmd = Start-Process -Verb RunAs -WindowStyle Hidden -PassThru -Wait -FilePath winget -ArgumentList @(
-                        'source'
-                        'reset'
-                        '--force'
-                        '--accept-source-agreements'
-                        '--name winget'
                     )
                     if ($cmd.ExitCode -ne 0) {
                         $ExitCodeSum += $cmd.ExitCode
@@ -141,7 +129,7 @@ foreach ($Wingetfile in $Wingetfiles) {
 
             if ($Params.name) {
                 $AppName = $Params.name
-                $ListApps = (winget list --name $AppName --exact).Split("`n")
+                $ListApps = (winget list --name `"$AppName`" --exact).Split("`n")
                 $Params.Remove('Name')
                 $Params.exact = $true
             } else {

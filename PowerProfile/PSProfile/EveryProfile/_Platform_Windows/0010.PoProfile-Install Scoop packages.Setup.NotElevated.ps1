@@ -42,8 +42,8 @@ if ($Scoopfiles.Count -gt 1) {
 }
 
 $ExitCodeSum = 0
-$buckets = scoop bucket list
-$apps = $(scoop export) | Select-String '^(\S+) *(?:\(v:(\S+)\))? *(?:\[(\S+)\])?$' | ForEach-Object { $_.matches.groups[1].value }
+$Buckets = scoop bucket list
+$Apps = $(scoop export) | Select-String '^(\S+) *(?:\(v:(\S+)\))? *(?:\[(\S+)\])?$' | ForEach-Object { $_.matches.groups[1].value }
 
 foreach ($Scoopfile in $Scoopfiles) {
     if ($Scoopfile -match '\.Scoop\.json$') {
@@ -58,12 +58,12 @@ foreach ($Scoopfile in $Scoopfiles) {
     }
 
     foreach ($Bucket in $Cfg.Buckets) {
-        if (-Not $buckets.Contains($Bucket.BucketDetails.Name)) {
+        if (-Not $Buckets.Contains($Bucket.BucketDetails.Name)) {
             scoop bucket add $Bucket.BucketDetails.Name
         }
 
         foreach ($App in $Bucket.Apps) {
-            if (($null -eq $apps) -or -not $apps.Contains($App.Name)) {
+            if (($null -eq $Apps) -or -not $Apps.Contains($App.Name)) {
                 Write-Host ('      ' + $App.Name)
                 scoop install $App.Name
                 if ($LASTEXITCODE -gt 0) {
