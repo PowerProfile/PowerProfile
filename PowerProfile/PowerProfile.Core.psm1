@@ -1058,6 +1058,10 @@ if ($null -eq $env:PSLVL) {
             $env:IsElevated = $true
         }
 
+        if ($Host.Name -eq 'ServerRemoteHost' -or $PSSenderInfo) {
+            $env:IsRemoteSession = $true
+        }
+
         if ($env:PSModulePath.Contains($env:OneDrive) -or $env:PSModulePath.Contains($env:OneDriveCommercial)) {
             $env:IsProfileRedirected = $true
         }
@@ -1125,6 +1129,17 @@ if ($null -eq $env:PSLVL) {
 
         # env:PSModulePath
         $env:PSModulePath += [System.IO.Path]::PathSeparator + [System.IO.Path]::Combine($PROFILEHOME,'Modules')
+
+        if (
+            $null -ne $env:SSH_CLIENT -or
+            $null -ne $env:SSH_TTY -or
+            (
+                $null -ne $ParentProcessName -and
+                $ParentProcessName -match '(?i)^-?sshd.*$'
+            )
+        ) {
+            $env:IsRemoteSession = $true
+        }
 
         $REALPROFILEHOME = Resolve-RealPath $PROFILEHOME
         if (

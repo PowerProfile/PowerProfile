@@ -63,7 +63,8 @@ function Initialize-Profiles {
                                     $IsCommand -or
                                     $null -ne $env:PSLVL -or
                                     $IsNonInteractive -or
-                                    $null -ne $PSDebugContext
+                                    $null -ne $PSDebugContext -or
+                                    $env:IsRemoteSession
                                 ) {
                                     continue FunctionNames
                                 }
@@ -137,6 +138,18 @@ function Initialize-Profiles {
 
                             NotElevated {
                                 if ($null -ne $env:IsElevated) {
+                                    continue FunctionNames
+                                }
+                            }
+
+                            Local {
+                                if ($null -ne $env:IsRemoteSession) {
+                                    continue FunctionNames
+                                }
+                            }
+
+                            Remote {
+                                if ($null -eq $env:IsRemoteSession) {
                                     continue FunctionNames
                                 }
                             }
