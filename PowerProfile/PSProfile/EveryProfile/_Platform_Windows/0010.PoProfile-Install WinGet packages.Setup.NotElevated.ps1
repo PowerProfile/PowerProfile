@@ -71,7 +71,7 @@ foreach ($Wingetfile in $Wingetfiles) {
         $ListSource = winget source list --name $Source.SourceDetails.Name
 
         if ($LASTEXITCODE -ne 0) {
-            if ($CanElevate -or $IsElevated) {
+            if ($null -ne $env:CanElevate -or $null -ne $env:IsElevated) {
                 if (
                     $Source.SourceDetails.Name -eq 'msstore' -or
                     $Source.SourceDetails.Name -eq 'winget'

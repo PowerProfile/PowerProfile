@@ -20,7 +20,7 @@ if ($null -eq $Settings -or $Settings.Count -eq 0) {
 }
 
 if (-Not (Get-Command choco -CommandType Application -ErrorAction Ignore)) {
-    if ($CanElevate -or $IsElevated) {
+    if ($null -ne $env:CanElevate -or $null -ne $env:IsElevated) {
         $cmd = Start-Process -Verb RunAs -PassThru -Wait -FilePath $env:SHELL -ArgumentList @(
             '--NoProfile'
             '--Command'

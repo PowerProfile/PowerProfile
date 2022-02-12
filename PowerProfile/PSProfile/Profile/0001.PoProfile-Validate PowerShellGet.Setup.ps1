@@ -33,8 +33,8 @@ elseif (-Not $IsWindows -or ($IsWindows -and $null -ne $env:IsElevated)) {
             Write-PoProfileProgress -ScriptTitle 'Upgrading PowerShellGet V2 to V3'
             Remove-Module PowerShellGet -Force -ErrorAction Ignore
             Remove-Module PackageManagement -Force -ErrorAction Ignore
-            $splatting = $Cfg.PowerShellGetV2toV3
-            Install-Module -Name PowerShellGet -Scope $Scope -Force -AllowClobber -Repository PSGallery -SkipPublisherCheck @splatting
+            $Params = $Cfg.PowerShellGetV2toV3
+            Install-Module -Name PowerShellGet -Scope $Scope -Force -AllowClobber -Repository PSGallery -SkipPublisherCheck @Params
             Remove-Module PowerShellGet -Force -ErrorAction Ignore
             Remove-Module PackageManagement -Force -ErrorAction Ignore
             # CompatPowerShellGet is not ready for use as of January 2022:
@@ -53,8 +53,8 @@ elseif (-Not $IsWindows -or ($IsWindows -and $null -ne $env:IsElevated)) {
             Write-PoProfileProgress -ScriptTitle 'Updating PowerShellGet'
             Remove-Module PowerShellGet -Force -ErrorAction Ignore
             Remove-Module PackageManagement -Force -ErrorAction Ignore
-            $splatting = $Cfg.PowerShellGet
-            Install-PSResource -Name PowerShellGet -Scope $Scope -Repository PSGallery -TrustRepository @splatting
+            $Params = $Cfg.PowerShellGet
+            Install-PSResource -Name PowerShellGet -Scope $Scope -Repository PSGallery -TrustRepository @Params
             Remove-Module PowerShellGet -Force -ErrorAction Ignore
             Remove-Module PackageManagement -Force -ErrorAction Ignore
             # CompatPowerShellGet is not ready for use as of January 2022:

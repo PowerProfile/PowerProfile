@@ -38,11 +38,11 @@ elseif (-Not $IsWindows -or ($IsWindows -and $null -ne $env:IsElevated)) {
     $Scope = if ($IsWindows) {'AllUsers'} else {'CurrentUser'}
 
     if ($InstalledNuGetVersion -lt $($Cfg.NuGetPackageProvider.MinimumVersion -replace '-[\w_.]+$')) {
-        Write-PoProfileProgress -ScriptTitle 'Updating NuGet package provider' -InProgress
+        Write-PoProfileProgress -ScriptTitle 'Updating NuGet package provider'
         try {
             Remove-Module PackageManagement
-            $splatting = $Cfg.NuGetPackageProvider
-            $null = Install-PackageProvider -Name NuGet -Scope $Scope -Force @splatting
+            $Params = $Cfg.NuGetPackageProvider
+            $null = Install-PackageProvider -Name NuGet -Scope $Scope -Force @Params
             Remove-Module PackageManagement
         }
         catch {
@@ -69,8 +69,8 @@ elseif (-Not $IsWindows -or ($IsWindows -and $null -ne $env:IsElevated)) {
             Write-PoProfileProgress -ScriptTitle 'Updating PackageManagement'
             Remove-Module PowerShellGet -Force -ErrorAction Ignore
             Remove-Module PackageManagement -Force -ErrorAction Ignore
-            $splatting = $Cfg.PackageManagement
-            $null = Install-Module -Name PackageManagement -Scope $Scope -Force -AllowClobber -Repository 'PSGallery' @splatting
+            $Params = $Cfg.PackageManagement
+            $null = Install-Module -Name PackageManagement -Scope $Scope -Force -AllowClobber -Repository 'PSGallery' @Params
             Remove-Module PowerShellGet -Force -ErrorAction Ignore
             Remove-Module PackageManagement -Force -ErrorAction Ignore
             $MadeChanges = $true
@@ -86,8 +86,8 @@ elseif (-Not $IsWindows -or ($IsWindows -and $null -ne $env:IsElevated)) {
             Write-PoProfileProgress -ScriptTitle 'Updating PowerShellGet V2'
             Remove-Module PowerShellGet -Force -ErrorAction Ignore
             Remove-Module PackageManagement -Force -ErrorAction Ignore
-            $splatting = $Cfg.PowerShellGetV2
-            $null = Install-Module -Name PowerShellGet -Scope $Scope -Force -AllowClobber -Repository 'PSGallery' @splatting
+            $Params = $Cfg.PowerShellGetV2
+            $null = Install-Module -Name PowerShellGet -Scope $Scope -Force -AllowClobber -Repository 'PSGallery' @Params
             Remove-Module PowerShellGet -Force -ErrorAction Ignore
             Remove-Module PackageManagement -Force -ErrorAction Ignore
             $MadeChanges = $true
